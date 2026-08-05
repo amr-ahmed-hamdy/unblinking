@@ -181,6 +181,10 @@ private struct ClosedLidTab: View {
     @ObservedObject var coordinator: WakeCoordinator
     @State private var showingRuleText = false
 
+    /// nil until the first poll lands. Never read synchronously from `body`, see
+    /// `PowerEnvironment.lidCloseWouldSleepAsync`.
+    @State private var lidWouldSleep: Bool?
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
@@ -274,16 +278,26 @@ private struct ClosedLidTab: View {
             }
             .padding(20)
         }
+        // Polled rather than read on demand, because `SleepDisabled` is a system-wide
+        // flag that anything can change: another app, or `sudo pmset` in Terminal. The
+        // task is cancelled when the window closes, so nothing runs in the background.
+        .task {
+            while !Task.isCancelled {
+                lidWouldSleep = await PowerEnvironment.lidCloseWouldSleepAsync()
+                try? await Task.sleep(nanoseconds: 2_000_000_000)
+            }
+        }
     }
 
     private var statusBox: some View {
-        let wouldSleep = PowerEnvironment.lidCloseWouldSleep
-
-        return Label(
-            wouldSleep
-                ? "Right now, closing the lid would put this Mac to sleep."
-                : "Right now, closing the lid would not put this Mac to sleep.",
-            systemImage: wouldSleep ? "moon.fill" : "sun.max.fill"
+        Label(
+            lidWouldSleep.map {
+                $0
+                    ? "Right now, closing the lid would put this Mac to sleep."
+                    : "Right now, closing the lid would not put this Mac to sleep."
+            } ?? "Checking what closing the lid would do…",
+            systemImage: lidWouldSleep.map { $0 ? "moon.fill" : "sun.max.fill" }
+                ?? "ellipsis.circle"
         )
         .font(.callout)
         .padding(10)

@@ -208,6 +208,20 @@ final class StatusItemController: NSObject, NSMenuDelegate {
             menu.addItem(warning)
         }
 
+        // Without this the lid item stays ticked while the layer is actually off, which
+        // reads as the app ignoring the setting rather than obeying the battery policy.
+        if coordinator.isClosedLidPausedByBattery {
+            separatorIfNeeded()
+            let battery = PowerEnvironment.batteryPercentage.map { " (\($0)%)" } ?? ""
+            let paused = NSMenuItem(
+                title: "⚠ Closed-lid mode paused on battery\(battery)",
+                action: nil,
+                keyEquivalent: ""
+            )
+            paused.isEnabled = false
+            menu.addItem(paused)
+        }
+
         guard !coordinator.strays.isEmpty else { return }
         separatorIfNeeded()
 

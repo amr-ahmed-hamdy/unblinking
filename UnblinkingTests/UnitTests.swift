@@ -1,6 +1,52 @@
 import XCTest
 @testable import Unblinking
 
+/// Regression cover for the crash where a `pmset` read from a SwiftUI view body took the
+/// whole app down with SIGSEGV.
+///
+/// The cause was `Process.waitUntilExit()`, which waits by *running the calling thread's
+/// run loop*. On the main thread that re-enters CoreFoundation and fires run loop
+/// observers, SwiftUI's update observer included, from inside a view update already in
+/// progress.
+final class ShellReentrancyTests: XCTestCase {
+    func testRunDoesNotDependOnTheRunLoopBeingSpun() {
+        // The main run loop is not running under XCTest, so anything that waited by
+        // spinning it would stall here rather than return.
+        let result = Shell.run("/bin/echo", ["unblinking"])
+        XCTAssertTrue(result.succeeded)
+        XCTAssertEqual(result.stdout.trimmingCharacters(in: .whitespacesAndNewlines),
+                       "unblinking")
+    }
+
+    /// The precise shape of the crash: a run loop observer that shells out. If `run`
+    /// re-entered the run loop, this would recurse into observer dispatch the way the
+    /// crashing stack did.
+    func testRunIsSafeFromInsideARunLoopObserver() {
+        let finished = expectation(description: "observer ran the command")
+        var output: String?
+
+        let observer = CFRunLoopObserverCreateWithHandler(
+            nil, CFRunLoopActivity.beforeWaiting.rawValue, false, 0
+        ) { _, _ in
+            output = Shell.run("/bin/echo", ["nested"]).stdout
+            finished.fulfill()
+        }
+        CFRunLoopAddObserver(CFRunLoopGetCurrent(), observer, .defaultMode)
+        defer { CFRunLoopRemoveObserver(CFRunLoopGetCurrent(), observer, .defaultMode) }
+
+        wait(for: [finished], timeout: 10)
+        XCTAssertEqual(output?.trimmingCharacters(in: .whitespacesAndNewlines), "nested")
+    }
+
+    func testFailedLaunchReportsRatherThanHanging() {
+        // No child is ever spawned, so `terminationHandler` never fires. The early
+        // return must come before anything waits on it.
+        let result = Shell.run("/nonexistent/unblinking-does-not-exist")
+        XCTAssertFalse(result.succeeded)
+        XCTAssertEqual(result.status, -1)
+    }
+}
+
 final class CaffeineArgumentTests: XCTestCase {
     private func arguments(
         display: Bool = false,

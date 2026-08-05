@@ -35,6 +35,22 @@ enum Shell {
         process.standardError = errPipe
         process.standardInput = FileHandle.nullDevice
 
+        // `Process.waitUntilExit()` must not be used here. It waits by *running the
+        // calling thread's run loop*, so on the main thread it re-enters CoreFoundation
+        // and fires run loop observers, SwiftUI's update observer among them, from inside
+        // whatever was already running. Reading pmset from a view body crashed the app
+        // exactly that way:
+        //
+        //   waitUntilExit -> _CFRunLoopRunSpecificWithOptions -> __CFRunLoopDoObservers
+        //   -> __CFRUNLOOP_IS_CALLING_OUT_TO_AN_OBSERVER_CALLBACK_FUNCTION__ -> SIGSEGV
+        //
+        // A semaphore signalled from `terminationHandler` blocks the caller without ever
+        // touching the run loop, so no re-entrancy is possible from any thread. It is
+        // installed before `run()`: Foundation will not invoke a handler set after the
+        // child has already exited, which would hang the wait below.
+        let exited = DispatchSemaphore(value: 0)
+        process.terminationHandler = { _ in exited.signal() }
+
         do {
             try process.run()
         } catch {
@@ -59,7 +75,7 @@ enum Shell {
             group.leave()
         }
         group.wait()
-        process.waitUntilExit()
+        exited.wait()
 
         return Result(
             status: process.terminationStatus,

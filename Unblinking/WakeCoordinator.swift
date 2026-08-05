@@ -160,7 +160,7 @@ final class WakeCoordinator: ObservableObject {
         hasWarnedOnBattery = false
 
         scheduleExpiry()
-        if preferences.closedLidEnabled {
+        if preferences.closedLidEnabled && batteryPolicyAllowsClamshell {
             enableClamshell()
         }
 
@@ -242,7 +242,7 @@ final class WakeCoordinator: ObservableObject {
         preferences.closedLidEnabled = enabled
 
         if enabled {
-            if isActive { enableClamshell() }
+            if isActive && batteryPolicyAllowsClamshell { enableClamshell() }
         } else {
             disableClamshell()
         }
@@ -374,31 +374,62 @@ final class WakeCoordinator: ObservableObject {
         notifyStateChange()
     }
 
-    /// Applies the configured battery policy. Default is `.never`, which only warns.
-    private func evaluateBatteryPolicy() {
-        guard clamshellActive else { return }
-
-        let onAC = PowerEnvironment.isOnACPower
-        if onAC {
-            hasWarnedOnBattery = false
-            return
-        }
+    /// Whether the battery policy permits closed-lid mode *right now*.
+    ///
+    /// Consulted before the layer is enabled as well as after, so a policy that forbids
+    /// it never causes `SleepDisabled` to be set and cleared again in the same breath,
+    /// which cost two privileged calls and briefly changed a system-wide setting for
+    /// nothing.
+    var batteryPolicyAllowsClamshell: Bool {
+        if PowerEnvironment.isOnACPower { return true }
 
         switch preferences.batteryPolicy {
         case .never:
-            // The user asked for no automatic shutoff. Respect that, but make sure they
-            // know the machine is now running unattended on battery.
-            guard !hasWarnedOnBattery else { return }
+            return true
+        case .offWhenUnplugged:
+            return false
+        case .offBelowThreshold:
+            guard let percentage = PowerEnvironment.batteryPercentage else { return true }
+            return percentage > preferences.batteryThreshold
+        }
+    }
+
+    /// True when closed-lid mode is switched on but the battery policy is holding it
+    /// back, so the menu can say so rather than appearing to ignore the setting.
+    var isClosedLidPausedByBattery: Bool {
+        isActive && preferences.closedLidEnabled && !clamshellActive
+            && !batteryPolicyAllowsClamshell
+    }
+
+    /// Applies the configured battery policy. Default is `.never`, which only warns.
+    private func evaluateBatteryPolicy() {
+        guard isActive, preferences.closedLidEnabled else { return }
+
+        let onAC = PowerEnvironment.isOnACPower
+        if onAC { hasWarnedOnBattery = false }
+
+        guard batteryPolicyAllowsClamshell else {
+            // Only the clamshell layer is at issue on battery. The caffeinate assertions
+            // cost nothing extra there and are exactly what the user asked for, so the
+            // session stays up.
+            //
+            // This used to call `finishSession`, which ended everything. With the policy
+            // set to "off when unplugged" and the charger out, turning the app on spawned
+            // caffeinate and then SIGTERMed it within milliseconds: the eye never lit, no
+            // error was shown, and the app looked completely broken.
+            if clamshellActive { disableClamshell() }
+            return
+        }
+
+        // Back within policy, charger reconnected or charge topped back up. Restore the
+        // layer the user asked for, but never prompt for it: an unexpected password
+        // dialog on plugging in would be its own bug.
+        if !clamshellActive && clamshell.isAuthorized { enableClamshell() }
+
+        // "Never" is allowed to keep running on battery by design, so make it visible.
+        if !onAC, preferences.batteryPolicy == .never, clamshellActive, !hasWarnedOnBattery {
             hasWarnedOnBattery = true
             postBatteryWarning()
-
-        case .offWhenUnplugged:
-            finishSession(clearClamshell: true)
-
-        case .offBelowThreshold:
-            guard let percentage = PowerEnvironment.batteryPercentage,
-                  percentage <= preferences.batteryThreshold else { return }
-            finishSession(clearClamshell: true)
         }
     }
 

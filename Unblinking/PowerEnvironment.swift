@@ -33,6 +33,17 @@ enum PowerEnvironment {
     /// state, not what a future lid close would do. `ClamshellPredictionTests` pins this.
     static var lidCloseWouldSleep: Bool { !SleepDisabledFlag.read() }
 
+    /// The same answer, without blocking the caller.
+    ///
+    /// Reading this costs a `pmset` subprocess, so it must never happen inside a SwiftUI
+    /// view body: that stalls the main thread on every re-render, and before `Shell.run`
+    /// stopped spinning the run loop it crashed the app outright. Views poll this from a
+    /// `.task` instead.
+    static func lidCloseWouldSleepAsync() async -> Bool {
+        let output = await Shell.runAsync("/usr/bin/pmset", ["-g", "live"]).stdout
+        return !(SleepDisabledFlag.parse(from: output) ?? false)
+    }
+
     static var isOnACPower: Bool {
         guard let blob = IOPSCopyPowerSourcesInfo()?.takeRetainedValue() else { return true }
         let type = IOPSGetProvidingPowerSourceType(blob)?.takeRetainedValue() as String?

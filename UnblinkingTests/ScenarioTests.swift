@@ -316,6 +316,59 @@ final class ScenarioTests: XCTestCase {
         )
     }
 
+    /// The regression that made the app look completely dead.
+    ///
+    /// With closed-lid mode switched on, the policy set to "off when unplugged", and the
+    /// charger out, `turnOn` spawned caffeinate and then `evaluateBatteryPolicy` called
+    /// `finishSession`, SIGTERMing it milliseconds later. Nothing was shown to the user:
+    /// the eye never lit and clicking the icon appeared to do nothing at all.
+    ///
+    /// The policy governs the clamshell layer only. Plain assertions are harmless on
+    /// battery, so the session must survive.
+    func testTurningOnWhileUnpluggedKeepsTheSessionAlive() throws {
+        try XCTSkipUnless(!PowerEnvironment.isOnACPower, "only meaningful on battery")
+
+        preferences.closedLidEnabled = true
+        preferences.batteryPolicy = .offWhenUnplugged
+
+        coordinator.turnOn(duration: .indefinite)
+
+        XCTAssertTrue(
+            coordinator.isActive,
+            "an unplugged battery policy must not end the whole session"
+        )
+        XCTAssertNotNil(
+            coordinator.caffeinateChildPID,
+            "caffeinate must still be running, the policy only governs closed-lid mode"
+        )
+        XCTAssertFalse(coordinator.clamshellActive, "the clamshell layer is what gets held back")
+        XCTAssertTrue(
+            coordinator.isClosedLidPausedByBattery,
+            "the menu needs this to explain why the ticked setting is not in force"
+        )
+    }
+
+    /// The gate is consulted *before* enabling, so a forbidden policy never sets and
+    /// clears `SleepDisabled` in the same breath.
+    func testBatteryPolicyGateMatchesThePolicy() throws {
+        try XCTSkipUnless(!PowerEnvironment.isOnACPower, "only meaningful on battery")
+
+        preferences.batteryPolicy = .never
+        XCTAssertTrue(coordinator.batteryPolicyAllowsClamshell)
+
+        preferences.batteryPolicy = .offWhenUnplugged
+        XCTAssertFalse(coordinator.batteryPolicyAllowsClamshell)
+
+        preferences.batteryPolicy = .offBelowThreshold
+        let charge = try XCTUnwrap(PowerEnvironment.batteryPercentage)
+
+        preferences.batteryThreshold = max(0, charge - 5)
+        XCTAssertTrue(coordinator.batteryPolicyAllowsClamshell, "above the threshold")
+
+        preferences.batteryThreshold = min(100, charge + 5)
+        XCTAssertFalse(coordinator.batteryPolicyAllowsClamshell, "at or below the threshold")
+    }
+
     func testBatteryPolicyChangeIsPersisted() {
         coordinator.setBatteryPolicy(.offBelowThreshold)
         XCTAssertEqual(preferences.batteryPolicy, .offBelowThreshold)
