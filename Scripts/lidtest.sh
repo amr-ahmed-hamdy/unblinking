@@ -3,7 +3,7 @@
 # Endurance test for closed-lid mode.
 #
 # Records a heartbeat plus battery, thermal and power state every 30s, so a run can be
-# checked for gaps *and* for the things a long run might hit that a short one won't:
+# checked for gaps and for the things a long run might hit that a short one will not:
 # battery drain, thermal throttling, or macOS deciding to sleep anyway after some delay.
 #
 #   ./Scripts/lidtest.sh            # run until Ctrl-C
