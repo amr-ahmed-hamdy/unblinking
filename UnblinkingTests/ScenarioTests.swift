@@ -584,3 +584,194 @@ final class ClamshellPredictionTests: XCTestCase {
         )
     }
 }
+
+/// What each battery policy actually *does* to a running session, including switching
+/// into a policy while the machine is already in its triggering condition.
+///
+/// The privileged runner and the power source are both faked, so these cover unplugging,
+/// plugging back in, and every charge level without root and without a real charger.
+@MainActor
+final class BatteryPolicyTransitionTests: XCTestCase {
+    private final class FakeRunner: PrivilegedRunner, @unchecked Sendable {
+        var isAuthorizationInstalled = true
+        var sleepDisabled = false
+        /// Every value the policy pushed to the system, in order.
+        var writes: [Bool] = []
+
+        func setSleepDisabled(_ disabled: Bool) throws {
+            sleepDisabled = disabled
+            writes.append(disabled)
+        }
+        func installAuthorization() throws {}
+        func removeAuthorization() throws {}
+    }
+
+    private final class MutablePower: PowerSourceReading, @unchecked Sendable {
+        var isOnACPower: Bool
+        var batteryPercentage: Int?
+        init(onAC: Bool, charge: Int?) {
+            isOnACPower = onAC
+            batteryPercentage = charge
+        }
+    }
+
+    private var suiteName: String!
+    private var preferences: Preferences!
+    private var runner: FakeRunner!
+    private var power: MutablePower!
+    private var coordinator: WakeCoordinator!
+
+    override func tearDown() async throws {
+        coordinator?.prepareForTermination()
+        coordinator = nil
+        if let suiteName { UserDefaults.standard.removePersistentDomain(forName: suiteName) }
+        try await super.tearDown()
+    }
+
+    /// Builds a running session with closed-lid mode switched on.
+    private func start(
+        policy: BatteryPolicy,
+        threshold: Int = 20,
+        onAC: Bool,
+        charge: Int?
+    ) {
+        suiteName = "com.amrhamdy.unblinking.transitions.\(UUID().uuidString)"
+        preferences = Preferences(defaults: UserDefaults(suiteName: suiteName)!)
+        preferences.closedLidEnabled = true
+        preferences.batteryPolicy = policy
+        preferences.batteryThreshold = threshold
+
+        runner = FakeRunner()
+        power = MutablePower(onAC: onAC, charge: charge)
+        coordinator = WakeCoordinator(
+            preferences: preferences,
+            clamshell: ClamshellController(runner: runner),
+            power: power
+        )
+        coordinator.turnOn(duration: .indefinite)
+    }
+
+    // MARK: - "Never turn off automatically"
+
+    /// Option 1 means exactly what it says, even at a critical charge.
+    func testNeverKeepsClosedLidOnAtCriticalCharge() {
+        start(policy: .never, onAC: false, charge: 2)
+
+        XCTAssertTrue(coordinator.clamshellActive)
+        XCTAssertTrue(runner.sleepDisabled)
+
+        coordinator.evaluateBatteryPolicy()
+        XCTAssertTrue(coordinator.clamshellActive, "\"never\" must never withdraw it")
+        XCTAssertTrue(runner.sleepDisabled)
+        XCTAssertFalse(coordinator.isClosedLidPausedByBattery)
+    }
+
+    // MARK: - "Turn off when unplugged from power"
+
+    /// Option 2, the case the user hit: switch to it while already unplugged and it must
+    /// take effect at once, not wait for the next charger event.
+    func testSwitchingToUnpluggedPolicyWhileUnpluggedWithdrawsAtOnce() {
+        start(policy: .never, onAC: false, charge: 80)
+        XCTAssertTrue(coordinator.clamshellActive)
+
+        coordinator.setBatteryPolicy(.offWhenUnplugged)
+
+        XCTAssertFalse(coordinator.clamshellActive, "must withdraw immediately on switching")
+        XCTAssertFalse(runner.sleepDisabled)
+        XCTAssertEqual(runner.writes, [true, false])
+        XCTAssertTrue(coordinator.isActive, "only closed-lid mode is withdrawn")
+        XCTAssertNotNil(coordinator.caffeinateChildPID)
+        XCTAssertTrue(coordinator.isClosedLidPausedByBattery, "the menu must be able to say why")
+    }
+
+    /// Unplugging mid-session does the same thing.
+    func testUnpluggingMidSessionWithdrawsClosedLid() {
+        start(policy: .offWhenUnplugged, onAC: true, charge: 90)
+        XCTAssertTrue(coordinator.clamshellActive)
+
+        power.isOnACPower = false
+        coordinator.evaluateBatteryPolicy()
+
+        XCTAssertFalse(coordinator.clamshellActive)
+        XCTAssertTrue(coordinator.isActive)
+    }
+
+    /// And plugging back in restores it, which is what "only holds while the charger is
+    /// connected" promises.
+    func testPluggingBackInRestoresClosedLid() {
+        start(policy: .offWhenUnplugged, onAC: true, charge: 90)
+        power.isOnACPower = false
+        coordinator.evaluateBatteryPolicy()
+        XCTAssertFalse(coordinator.clamshellActive)
+
+        power.isOnACPower = true
+        coordinator.evaluateBatteryPolicy()
+
+        XCTAssertTrue(coordinator.clamshellActive, "reconnecting the charger restores it")
+        XCTAssertTrue(runner.sleepDisabled)
+        XCTAssertFalse(coordinator.isClosedLidPausedByBattery)
+    }
+
+    // MARK: - "Turn off below a battery level"
+
+    /// Option 3, switched into while already under the threshold.
+    func testSwitchingToThresholdPolicyBelowTheThresholdWithdrawsAtOnce() {
+        start(policy: .never, onAC: false, charge: 15)
+        XCTAssertTrue(coordinator.clamshellActive)
+
+        preferences.batteryThreshold = 20
+        coordinator.setBatteryPolicy(.offBelowThreshold)
+
+        XCTAssertFalse(coordinator.clamshellActive)
+        XCTAssertTrue(coordinator.isActive)
+        XCTAssertTrue(coordinator.isClosedLidPausedByBattery)
+    }
+
+    /// Draining past the threshold withdraws it without any user action.
+    func testDrainingPastTheThresholdWithdrawsClosedLid() {
+        start(policy: .offBelowThreshold, threshold: 20, onAC: false, charge: 25)
+        XCTAssertTrue(coordinator.clamshellActive)
+
+        power.batteryPercentage = 20
+        coordinator.evaluateBatteryPolicy()
+
+        XCTAssertFalse(coordinator.clamshellActive, "at the threshold counts as below")
+    }
+
+    /// Editing the threshold re-evaluates in both directions.
+    func testThresholdEditsApplyImmediatelyBothWays() {
+        start(policy: .offBelowThreshold, threshold: 20, onAC: false, charge: 30)
+        XCTAssertTrue(coordinator.clamshellActive)
+
+        coordinator.setBatteryThreshold(35)
+        XCTAssertFalse(coordinator.clamshellActive, "raising past the charge withdraws it")
+
+        coordinator.setBatteryThreshold(10)
+        XCTAssertTrue(coordinator.clamshellActive, "lowering below the charge restores it")
+    }
+
+    // MARK: - Turning on inside a forbidden condition
+
+    /// The gate runs before the layer is enabled, so a forbidden policy costs no
+    /// privileged call at all rather than setting the flag and clearing it again.
+    func testTurningOnWhileForbiddenNeverTouchesTheSystemFlag() {
+        start(policy: .offBelowThreshold, threshold: 20, onAC: false, charge: 10)
+
+        XCTAssertTrue(coordinator.isActive)
+        XCTAssertNotNil(coordinator.caffeinateChildPID)
+        XCTAssertFalse(coordinator.clamshellActive)
+        XCTAssertTrue(runner.writes.isEmpty, "no set-then-clear churn on a system-wide flag")
+        XCTAssertTrue(coordinator.isClosedLidPausedByBattery)
+    }
+
+    /// Ticking the lid setting while the policy forbids it must not engage it either.
+    func testEnablingClosedLidWhileForbiddenDoesNotEngageIt() {
+        start(policy: .offWhenUnplugged, onAC: false, charge: 50)
+        XCTAssertFalse(coordinator.clamshellActive)
+
+        coordinator.setClosedLidEnabled(true)
+
+        XCTAssertFalse(coordinator.clamshellActive)
+        XCTAssertTrue(runner.writes.isEmpty)
+    }
+}

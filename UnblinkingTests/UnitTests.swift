@@ -441,3 +441,98 @@ final class DurationFormattingTests: XCTestCase {
         XCTAssertEqual(SessionDuration.indefinite.title, "Indefinitely")
     }
 }
+
+/// Every battery policy, at every combination of power source and charge.
+///
+/// These decide when a *system-wide* setting gets withdrawn, so they are worth pinning
+/// exhaustively rather than at the one charge level the test machine happens to be at.
+/// The power source is injected because it cannot be staged on real hardware.
+@MainActor
+final class BatteryPolicyDecisionTests: XCTestCase {
+    private struct StubPower: PowerSourceReading {
+        var isOnACPower: Bool
+        var batteryPercentage: Int?
+    }
+
+    private var suiteName: String!
+
+    override func setUp() async throws {
+        try await super.setUp()
+        suiteName = "com.amrhamdy.unblinking.policy.\(UUID().uuidString)"
+    }
+
+    override func tearDown() async throws {
+        if let suiteName { UserDefaults.standard.removePersistentDomain(forName: suiteName) }
+        try await super.tearDown()
+    }
+
+    private func allows(
+        _ policy: BatteryPolicy,
+        onAC: Bool,
+        charge: Int?,
+        threshold: Int = 20
+    ) -> Bool {
+        let preferences = Preferences(defaults: UserDefaults(suiteName: suiteName)!)
+        preferences.batteryPolicy = policy
+        preferences.batteryThreshold = threshold
+        let coordinator = WakeCoordinator(
+            preferences: preferences,
+            power: StubPower(isOnACPower: onAC, batteryPercentage: charge)
+        )
+        return coordinator.batteryPolicyAllowsClamshell
+    }
+
+    /// "Never turn off automatically" means exactly that, at any charge.
+    func testNeverAllowsClosedLidEverywhere() {
+        XCTAssertTrue(allows(.never, onAC: true, charge: 100))
+        XCTAssertTrue(allows(.never, onAC: false, charge: 100))
+        XCTAssertTrue(allows(.never, onAC: false, charge: 20))
+        XCTAssertTrue(allows(.never, onAC: false, charge: 5))
+        XCTAssertTrue(allows(.never, onAC: false, charge: 1))
+        XCTAssertTrue(allows(.never, onAC: false, charge: nil))
+    }
+
+    /// "Turn off when unplugged" keys on the charger alone, never on charge.
+    func testOffWhenUnpluggedKeysOnTheChargerOnly() {
+        XCTAssertTrue(allows(.offWhenUnplugged, onAC: true, charge: 5),
+                      "plugged in, so allowed even at 5%")
+        XCTAssertFalse(allows(.offWhenUnplugged, onAC: false, charge: 100),
+                       "unplugged, so forbidden even at 100%")
+        XCTAssertFalse(allows(.offWhenUnplugged, onAC: false, charge: nil))
+    }
+
+    /// The threshold is a floor: at or below it, closed-lid mode is withdrawn.
+    func testOffBelowThresholdBoundary() {
+        XCTAssertTrue(allows(.offBelowThreshold, onAC: false, charge: 21, threshold: 20),
+                      "one above the threshold is still allowed")
+        XCTAssertFalse(allows(.offBelowThreshold, onAC: false, charge: 20, threshold: 20),
+                       "exactly at the threshold is withdrawn, matching \"below a level\"")
+        XCTAssertFalse(allows(.offBelowThreshold, onAC: false, charge: 19, threshold: 20))
+        XCTAssertFalse(allows(.offBelowThreshold, onAC: false, charge: 0, threshold: 20))
+    }
+
+    /// Charge only matters on battery. On the charger the policy never withholds.
+    func testOffBelowThresholdIgnoresChargeWhilePluggedIn() {
+        XCTAssertTrue(allows(.offBelowThreshold, onAC: true, charge: 1, threshold: 90))
+    }
+
+    /// A machine with no battery reports nil charge. Withdrawing closed-lid mode there
+    /// would break desktops for no reason, so an unknown charge is permissive.
+    func testUnknownChargeDoesNotWithholdClosedLid() {
+        XCTAssertTrue(allows(.offBelowThreshold, onAC: false, charge: nil, threshold: 20))
+    }
+
+    /// The whole range, so no threshold value has a surprising hole in it.
+    func testThresholdSweep() {
+        for threshold in stride(from: 5, through: 90, by: 5) {
+            for charge in 0...100 {
+                let expected = charge > threshold
+                XCTAssertEqual(
+                    allows(.offBelowThreshold, onAC: false, charge: charge, threshold: threshold),
+                    expected,
+                    "charge \(charge)% against threshold \(threshold)%"
+                )
+            }
+        }
+    }
+}

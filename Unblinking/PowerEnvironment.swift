@@ -71,6 +71,24 @@ enum PowerEnvironment {
     }
 }
 
+/// The two power facts the battery policy depends on.
+///
+/// A protocol rather than direct calls to `PowerEnvironment` because the policies are
+/// decided entirely by charge and power source, and those cannot be staged on real
+/// hardware: a test machine is plugged in or it is not, and its charge is whatever it
+/// happens to be. Injecting them is the only way to cover all three policies at the
+/// boundaries that matter.
+protocol PowerSourceReading: Sendable {
+    var isOnACPower: Bool { get }
+    var batteryPercentage: Int? { get }
+}
+
+/// The real machine.
+struct SystemPowerSource: PowerSourceReading {
+    var isOnACPower: Bool { PowerEnvironment.isOnACPower }
+    var batteryPercentage: Int? { PowerEnvironment.batteryPercentage }
+}
+
 /// Fires a callback whenever the power source changes, charger plugged or unplugged,
 /// battery level moved. Cheaper and more responsive than polling.
 final class PowerSourceObserver {

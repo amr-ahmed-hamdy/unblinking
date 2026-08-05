@@ -24,13 +24,19 @@ final class WakeCoordinator: ObservableObject {
     private let caffeine = CaffeineProcess()
     private let clamshell: ClamshellController
     private let preferences: Preferences
+    private let power: PowerSourceReading
     private var expiryTimer: Timer?
     private var powerObserver: PowerSourceObserver?
     private var hasWarnedOnBattery = false
 
-    init(preferences: Preferences = .shared, clamshell: ClamshellController? = nil) {
+    init(
+        preferences: Preferences = .shared,
+        clamshell: ClamshellController? = nil,
+        power: PowerSourceReading = SystemPowerSource()
+    ) {
         self.preferences = preferences
         self.clamshell = clamshell ?? ClamshellController()
+        self.power = power
 
         caffeine.onUnexpectedExit = { [weak self] in
             // caffeinate exited by itself: -t elapsed, or something killed it. Whatever
@@ -381,7 +387,7 @@ final class WakeCoordinator: ObservableObject {
     /// which cost two privileged calls and briefly changed a system-wide setting for
     /// nothing.
     var batteryPolicyAllowsClamshell: Bool {
-        if PowerEnvironment.isOnACPower { return true }
+        if power.isOnACPower { return true }
 
         switch preferences.batteryPolicy {
         case .never:
@@ -389,7 +395,7 @@ final class WakeCoordinator: ObservableObject {
         case .offWhenUnplugged:
             return false
         case .offBelowThreshold:
-            guard let percentage = PowerEnvironment.batteryPercentage else { return true }
+            guard let percentage = power.batteryPercentage else { return true }
             return percentage > preferences.batteryThreshold
         }
     }
@@ -402,10 +408,15 @@ final class WakeCoordinator: ObservableObject {
     }
 
     /// Applies the configured battery policy. Default is `.never`, which only warns.
-    private func evaluateBatteryPolicy() {
+    ///
+    /// Also the entry point for `PowerSourceObserver`, so it runs on every charger and
+    /// charge change as well as when the policy or threshold is edited. Internal rather
+    /// than private so tests can drive a power change directly, which is otherwise only
+    /// reachable by physically unplugging the machine.
+    func evaluateBatteryPolicy() {
         guard isActive, preferences.closedLidEnabled else { return }
 
-        let onAC = PowerEnvironment.isOnACPower
+        let onAC = power.isOnACPower
         if onAC { hasWarnedOnBattery = false }
 
         guard batteryPolicyAllowsClamshell else {
@@ -417,7 +428,12 @@ final class WakeCoordinator: ObservableObject {
             // set to "off when unplugged" and the charger out, turning the app on spawned
             // caffeinate and then SIGTERMed it within milliseconds: the eye never lit, no
             // error was shown, and the app looked completely broken.
-            if clamshellActive { disableClamshell() }
+            if clamshellActive {
+                disableClamshell()
+                // Posted only on the transition, so a policy that simply stays unsatisfied
+                // does not notify again on every power event.
+                postClosedLidPausedWarning()
+            }
             return
         }
 
@@ -430,6 +446,36 @@ final class WakeCoordinator: ObservableObject {
         if !onAC, preferences.batteryPolicy == .never, clamshellActive, !hasWarnedOnBattery {
             hasWarnedOnBattery = true
             postBatteryWarning()
+        }
+    }
+
+    /// Fired when a battery policy actively withdraws closed-lid mode.
+    ///
+    /// Without this the change is invisible until the menu is next opened, and the
+    /// consequence is not small: the lid was holding the Mac awake a moment ago and now
+    /// closing it will sleep the machine.
+    private func postClosedLidPausedWarning() {
+        let unplugged = preferences.batteryPolicy == .offWhenUnplugged
+        let charge = power.batteryPercentage.map { " (\($0)%)" } ?? ""
+        let reason = unplugged
+            ? "the charger was unplugged\(charge)"
+            : "the battery dropped to \(preferences.batteryThreshold)%\(charge)"
+
+        let center = UNUserNotificationCenter.current()
+        center.requestAuthorization(options: [.alert]) { granted, _ in
+            guard granted else { return }
+
+            let content = UNMutableNotificationContent()
+            content.title = "Closed-lid mode turned off"
+            content.body = "Unblinking is still keeping this Mac awake, but \(reason), "
+                + "so closing the lid will now put it to sleep."
+
+            let request = UNNotificationRequest(
+                identifier: "com.amrhamdy.unblinking.closedlid.paused",
+                content: content,
+                trigger: nil
+            )
+            UNUserNotificationCenter.current().add(request)
         }
     }
 
@@ -457,7 +503,7 @@ final class WakeCoordinator: ObservableObject {
     }
 
     var isOnBatteryWithSleepDisabled: Bool {
-        clamshellActive && !PowerEnvironment.isOnACPower
+        clamshellActive && !power.isOnACPower
     }
 
     /// pid of the `caffeinate` child, when one is running. Useful for diagnostics and for
