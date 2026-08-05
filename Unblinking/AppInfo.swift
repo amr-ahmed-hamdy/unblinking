@@ -12,8 +12,7 @@ enum AppInfo {
 
     // MARK: - Links
     //
-    // NOTE: `repository` and `issues` are placeholders until the repo is published.
-    // Change them here and everything that links out follows.
+    // Change these here and everything that links out follows.
 
     static let linkedIn = URL(string: "https://www.linkedin.com/in/amr-hamdy/")!
     static let repository = URL(string: "https://github.com/amr-ahmed-hamdy/unblinking")!
