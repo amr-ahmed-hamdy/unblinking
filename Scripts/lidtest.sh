@@ -11,7 +11,7 @@
 #
 # Procedure:
 #   1. Plug in. An unattended closed laptop on battery is how you flatten a battery.
-#   2. Turn Unblinking on with "Keep Awake With Lid Closed" ticked — the eye must be RED.
+#   2. Turn Unblinking on with "Keep Awake With Lid Closed" ticked. The eye must be RED.
 #   3. Start this script, close the lid, leave it for as long as you can (hours is ideal).
 #   4. Reopen, Ctrl-C, then run with --report.
 #
