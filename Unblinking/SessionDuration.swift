@@ -26,7 +26,8 @@ enum SessionDuration: Equatable, Hashable {
                     : String(format: "%.1f", hours)
                 return "\(trimmed) hour\(hours == 1 ? "" : "s")"
             }
-            return "\(total / 60) minutes"
+            let minutes = total / 60
+            return "\(minutes) minute\(minutes == 1 ? "" : "s")"
         }
     }
 

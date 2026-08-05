@@ -75,11 +75,11 @@ struct SudoersRunner: PrivilegedRunner {
         """
         # Installed by Unblinking.app.
         #
-        # Lets \(user) toggle lid-close sleep without a password prompt every time.
+        # Lets \(user) turn closed-lid mode on and off without a password prompt every time.
         # Scoped to these two exact commands, no wildcards, no other pmset subcommands.
         #
         # Remove with:  sudo rm \(ruleFilePath)
-        # (or use "Remove Permission" in Unblinking's Closed-Lid settings)
+        # (or use "Remove Permission" in Unblinking's Closed Lid settings)
         \(user) ALL=(root) NOPASSWD: /usr/bin/pmset -a disablesleep 0, /usr/bin/pmset -a disablesleep 1
         """
     }

@@ -18,8 +18,8 @@ enum BatteryPolicy: String, CaseIterable, Identifiable {
     var explanation: String {
         switch self {
         case .never:
-            return "Closed-lid mode stays on until you turn it off. On battery this can run "
-                 + "the Mac down completely, in a closed bag it will also get hot."
+            return "Closed-lid mode stays on until you turn it off. On battery that can flatten "
+                 + "the Mac completely, and in a closed bag it will also get hot."
         case .offWhenUnplugged:
             return "Closed-lid mode only holds while the charger is connected. Unplugging "
                  + "restores normal sleep immediately."
@@ -65,13 +65,13 @@ enum IconStyle: String, CaseIterable, Identifiable {
         switch self {
         case .subtle:
             return "Monochrome, like every other menu bar icon. A shut eye when off, an "
-                 + "open one when awake. Quietest, and the easiest to overlook."
+                 + "open one when awake. The quietest option, and the easiest to miss."
         case .colour:
             return "Orange when awake, red when closed-lid mode is on. Obvious at a "
                  + "glance, with nothing moving."
         case .vivid:
             return "Colour plus a glow that breathes, faster and red when closed-lid mode "
-                 + "is on. The hardest to walk past, which is rather the point."
+                 + "is on. The hardest to overlook, which is the point."
         }
     }
 

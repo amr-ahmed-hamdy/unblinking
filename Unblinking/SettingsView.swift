@@ -40,7 +40,7 @@ private struct GeneralTab: View {
     var body: some View {
         Form {
             Section {
-                Toggle("Launch Unblinking at login", isOn: $launchAtLogin)
+                Toggle("Launch at login", isOn: $launchAtLogin)
                     .onChange(of: launchAtLogin) { newValue in
                         do {
                             try LoginItem.setEnabled(newValue)
@@ -87,8 +87,8 @@ private struct GeneralTab: View {
                     .font(.callout)
                     .foregroundColor(.secondary)
 
-                Toggle("Turn on automatically at launch", isOn: $preferences.restoreStateAtLaunch)
-                Text("Restores whatever state Unblinking was in when it last quit.")
+                Toggle("Restore last state at launch", isOn: $preferences.restoreStateAtLaunch)
+                Text("If Unblinking was on when it last quit, it turns itself back on.")
                     .font(.callout)
                     .foregroundColor(.secondary)
             }
@@ -108,7 +108,7 @@ private struct GeneralTab: View {
 
                 Toggle("Show time in the menu bar", isOn: $preferences.showTimeInMenuBar)
                 if preferences.showTimeInMenuBar {
-                    Picker("Show", selection: $preferences.timeDisplay) {
+                    Picker("Time", selection: $preferences.timeDisplay) {
                         ForEach(TimeDisplay.allCases) { mode in
                             Text(mode.title).tag(mode)
                         }
@@ -137,29 +137,22 @@ private struct SleepTab: View {
                 .foregroundColor(.secondary)
 
             Toggle("Display sleep", isOn: $preferences.preventDisplaySleep)
-            Text("Keeps the screen lit. caffeinate -d")
-                .font(.caption)
-                .foregroundColor(.secondary)
+            caption("Keeps the screen lit.", flag: "caffeinate -d")
 
             Toggle("Idle system sleep", isOn: $preferences.preventIdleSleep)
-            Text("Stops the Mac sleeping when you're not using it. caffeinate -i")
-                .font(.caption)
-                .foregroundColor(.secondary)
+            caption("Stops the Mac sleeping while you are away from it.",
+                    flag: "caffeinate -i")
 
             Toggle("Disk sleep", isOn: $preferences.preventDiskSleep)
-            Text("Keeps drives spun up. caffeinate -m")
-                .font(.caption)
-                .foregroundColor(.secondary)
+            caption("Keeps drives spun up.", flag: "caffeinate -m")
 
-            Toggle("System sleep while on power", isOn: $preferences.preventSystemSleepOnAC)
-            Text("Only applies on AC power. caffeinate -s")
-                .font(.caption)
-                .foregroundColor(.secondary)
+            Toggle("System sleep while plugged in", isOn: $preferences.preventSystemSleepOnAC)
+            caption("Has no effect on battery.", flag: "caffeinate -s")
 
             Divider().padding(.vertical, 6)
 
-            Text("None of these affect what happens when you close the lid, that needs "
-                 + "Closed Lid mode.")
+            Text("None of these affect what happens when you close the lid. That needs "
+                 + "closed-lid mode, on the Closed Lid tab.")
                 .font(.callout)
                 .foregroundColor(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -167,6 +160,17 @@ private struct SleepTab: View {
             Spacer(minLength: 0)
         }
         .padding(20)
+    }
+
+    /// Plain-English description plus the flag it maps to, set in monospace so the flag
+    /// reads as a command rather than as the last two words of the sentence.
+    private func caption(_ description: String, flag: String) -> some View {
+        (
+            Text(description + " ")
+                + Text(flag).font(.system(.caption, design: .monospaced))
+        )
+        .font(.caption)
+        .foregroundColor(.secondary)
     }
 }
 
@@ -241,7 +245,7 @@ private struct ClosedLidTab: View {
 
                 HStack {
                     Text(coordinator.isClosedLidAuthorized
-                         ? "Granted, Unblinking can toggle lid-close sleep without asking."
+                         ? "Granted. Unblinking can turn closed-lid mode on and off without asking again."
                          : "Not granted yet. You'll be asked once when you first turn this on.")
                         .font(.callout)
                         .foregroundColor(.secondary)
@@ -309,8 +313,8 @@ private struct AboutTab: View {
             Divider().padding(.vertical, 4)
 
             VStack(alignment: .leading, spacing: 6) {
-                Label("Left-click the eye to toggle", systemImage: "cursorarrow.click")
-                Label("Right-click for durations and settings", systemImage: "cursorarrow.click.2")
+                Label("Click the eye to turn Unblinking on or off", systemImage: "cursorarrow.click")
+                Label("Right-click for duration and settings", systemImage: "cursorarrow.click.2")
                 Label("A glowing eye means it's on", systemImage: "eye")
             }
             .font(.callout)

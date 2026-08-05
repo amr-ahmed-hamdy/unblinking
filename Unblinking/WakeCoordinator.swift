@@ -103,8 +103,8 @@ final class WakeCoordinator: ObservableObject {
         alert.messageText = "This Mac is set to never sleep"
         alert.informativeText = """
             The system-wide "disable sleep" setting is currently on, but Unblinking didn't \
-            turn it on. Something else did, another app, or a manual \
-            `sudo pmset -a disablesleep 1`.
+            turn it on. Something else did: another app, or a manual \
+            "sudo pmset -a disablesleep 1" in Terminal.
 
             While it's on, this Mac won't sleep even when you close the lid.
             """

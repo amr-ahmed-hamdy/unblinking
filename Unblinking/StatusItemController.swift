@@ -140,7 +140,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
 
         menu.addItem(.separator())
 
-        let durationItem = NSMenuItem(title: "Turn On For", action: nil, keyEquivalent: "")
+        let durationItem = NSMenuItem(title: "Duration", action: nil, keyEquivalent: "")
         let durationMenu = NSMenu()
         for duration in SessionDuration.presets {
             let item = NSMenuItem(
@@ -157,14 +157,14 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         menu.addItem(durationItem)
 
         let lidItem = NSMenuItem(
-            title: "Keep Awake With Lid Closed",
+            title: "Keep Awake with the Lid Closed",
             action: #selector(toggleClosedLid),
             keyEquivalent: ""
         )
         lidItem.target = self
         lidItem.state = preferences.closedLidEnabled ? .on : .off
         if coordinator.isAuthorizingClosedLid {
-            lidItem.title = "Keep Awake With Lid Closed (authorizing…)"
+            lidItem.title = "Keep Awake with the Lid Closed (waiting for your password…)"
             lidItem.isEnabled = false
         }
         menu.addItem(lidItem)
@@ -200,7 +200,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
             separatorIfNeeded()
             let battery = PowerEnvironment.batteryPercentage.map { " (\($0)%)" } ?? ""
             let warning = NSMenuItem(
-                title: "⚠ On battery\(battery), sleep is disabled",
+                title: "⚠ On battery\(battery), this Mac will not sleep",
                 action: nil,
                 keyEquivalent: ""
             )
@@ -213,7 +213,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
 
         let count = coordinator.strays.count
         let strayItem = NSMenuItem(
-            title: "⚠ \(count) caffeinate process\(count == 1 ? "" : "es") outside this app",
+            title: "⚠ \(count) caffeinate process\(count == 1 ? "" : "es") not started by Unblinking",
             action: nil,
             keyEquivalent: ""
         )
@@ -230,7 +230,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
 
         for stray in coordinator.strays {
             let item = NSMenuItem(
-                title: "pid \(stray.pid): \(stray.command)",
+                title: "PID \(stray.pid): \(stray.command)",
                 action: #selector(stopStray(_:)),
                 keyEquivalent: ""
             )
@@ -245,7 +245,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
 
     private var statusLine: String {
         guard coordinator.isActive, let startedAt = coordinator.startedAt else {
-            return "Unblinking is off"
+            return "Off, this Mac sleeps normally"
         }
 
         let suffix: String
@@ -256,7 +256,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         }
 
         return coordinator.clamshellActive
-            ? "Awake, lid close included, \(suffix)"
+            ? "Awake with the lid closed, \(suffix)"
             : "Awake, \(suffix)"
     }
 
