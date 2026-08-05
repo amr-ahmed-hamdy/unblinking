@@ -4,7 +4,7 @@
 
 # Unblinking
 
-**Keep your Mac awake — including with the lid closed.**
+**Keep your Mac awake, including with the lid closed.**
 
 The `caffeinate` command can't do that. This app can.
 
@@ -12,7 +12,7 @@ The `caffeinate` command can't do that. This app can.
 [![Swift](https://img.shields.io/badge/Swift-5.9-F05138?logo=swift&logoColor=white)](https://swift.org)
 [![Apple Silicon](https://img.shields.io/badge/Apple%20Silicon-native-000000?logo=apple&logoColor=white)](https://support.apple.com/en-us/HT211814)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-67%20passing-brightgreen)](#testing)
+[![Tests](https://img.shields.io/badge/tests-71%20passing-brightgreen)](#testing)
 
 <img src="assets/menu.png" width="480" alt="Unblinking menu bar app showing its menu">
 
@@ -23,7 +23,7 @@ The `caffeinate` command can't do that. This app can.
 ## Why this exists
 
 If you've ever run `caffeinate` in a terminal, closed your MacBook, and come back to find
-your job dead — this is why.
+your job dead, this is why.
 
 **`caffeinate` cannot keep a MacBook awake with the lid closed. It never could.**
 
@@ -39,7 +39,7 @@ The only software override is the system-wide `SleepDisabled` flag, which needs 
 sudo pmset -a disablesleep 1
 ```
 
-Unblinking wraps both mechanisms behind a single eye in your menu bar, and — critically —
+Unblinking wraps both mechanisms behind a single eye in your menu bar and, critically,
 makes sure that flag always gets turned back off.
 
 The second problem it solves is subtler: with `caffeinate` in a terminal, **nothing tells
@@ -53,12 +53,12 @@ that is either shut or wide open removes that entire class of mistake.
 | | |
 |---|---|
 | 👁 **One-click toggle** | Left-click the eye. That's it. |
-| 💤 **Real closed-lid support** | Keeps working when you shut the lid — the thing `caffeinate` can't do |
+| 💤 **Real closed-lid support** | Keeps working when you shut the lid, the thing `caffeinate` can't do |
 | 🔆 **Impossible to miss** | A shut eye when off; an open, breathing eye when on |
 | ⏱ **Timed sessions** | 15m / 30m / 1h / 2h / 4h / indefinitely, with a live countdown |
 | 🔋 **Battery guards** | Never / turn off when unplugged / turn off below a threshold |
 | ⚠️ **Stray process detection** | Finds `caffeinate` started elsewhere and lets you stop it |
-| 🔒 **Minimal privileges** | One admin prompt, ever — scoped to exactly two commands |
+| 🔒 **Minimal privileges** | One admin prompt, ever, scoped to exactly two commands |
 | 🧹 **Never leaves a mess** | Cleans up on quit, on crash, and on next launch |
 | 🚀 **Launch at login** | Modern `SMAppService` registration |
 | ♿ **Considerate** | Menu bar item is labelled for VoiceOver and reports its state; respects Reduce Motion |
@@ -74,7 +74,7 @@ that is either shut or wide open removes that entire class of mistake.
 
 The states are deliberately lopsided. Off is a monochrome *template* image, so macOS tints
 it like every other menu bar icon and it recedes. The active states are full colour with a
-halo that breathes — motion catches peripheral vision, which is exactly what you need when
+halo that breathes. Motion catches peripheral vision, which is exactly what you need when
 you've forgotten it's running.
 
 Urgency is carried by colour *and* tempo. Ordinary awake breathes orange over three
@@ -82,7 +82,7 @@ seconds; closed-lid mode breathes red in half that time, because it is the state
 disables system sleep outright and can flatten a battery in a closed bag.
 
 The eye deliberately never blinks. A shut-eye frame is pixel-for-pixel the off state, so a
-blinking icon would flash "asleep" every few seconds — precisely the confusion this app
+blinking icon would flash "asleep" every few seconds, precisely the confusion this app
 exists to remove.
 
 ### Choosing how loud it is
@@ -97,7 +97,7 @@ icon** offers three levels. Each adds exactly one signal to the one before it:
 | **Vivid** *(default)* | shut eye | orange eye, breathing | red eye, breathing at 2× |
 
 Subtle is a monochrome template image throughout, so macOS tints it exactly like every
-other menu bar icon — pick it if you want Unblinking to disappear into the bar. Vivid is
+other menu bar icon. Pick it if you want Unblinking to disappear into the bar. Vivid is
 the default because the app exists to stop you forgetting.
 
 **Reduce Motion overrides the choice.** If it's enabled in System Settings › Accessibility,
@@ -110,13 +110,13 @@ wins.
 
 Requires **macOS 13 (Ventura) or later**. Apple Silicon and Intel both supported.
 
-### Option A — download the release
+### Option A: download the release
 
 1. Download `Unblinking.dmg` from [Releases](https://github.com/amr-ahmed-hamdy/unblinking/releases)
 2. Open the DMG and drag **Unblinking** into **Applications**
 3. Eject the DMG, then open **Unblinking** from Applications
 4. An eye appears at the right-hand end of your menu bar. There is no Dock icon and no
-   window — the menu bar is the whole app
+   window. The menu bar is the whole app
 
 > [!IMPORTANT]
 > **Unblinking is not notarized**, so macOS will say it "cannot be opened because Apple
@@ -125,22 +125,22 @@ Requires **macOS 13 (Ventura) or later**. Apple Silicon and Intel both supported
 >
 > Two ways past it, once:
 >
-> **Terminal** — fastest, and this is a terminal-shaped audience:
+> **Terminal.** Fastest, and this is a terminal shaped audience:
 >
 > ```bash
 > xattr -dr com.apple.quarantine /Applications/Unblinking.app
 > ```
 >
-> **Or the GUI** — **System Settings › Privacy & Security**, scroll to Security, click
+> **Or the GUI**: **System Settings › Privacy & Security**, scroll to Security, click
 > **Open Anyway** next to the Unblinking message, then confirm. macOS 15 removed the old
 > right-click → Open shortcut, so this is the only clickable route.
 >
 > What that flag actually is: macOS tags *downloaded* files with `com.apple.quarantine`,
 > and Gatekeeper's dialog fires on that tag alone. Removing it is exactly what "Open
-> Anyway" does. Apps you build yourself are never tagged — which is why **Option B below
+> Anyway" does. Apps you build yourself are never tagged, which is why **Option B below
 > has no Gatekeeper step at all.**
 
-### Option B — build it yourself (no Gatekeeper prompt)
+### Option B: build it yourself (no Gatekeeper prompt)
 
 Requires **Xcode 16 or later** (developed on Xcode 26.4 / macOS 26.2). Locally built apps
 are never quarantined, so this path just works.
@@ -156,12 +156,12 @@ That builds a Release copy, installs it to `/Applications`, and launches it. Or 
 
 ### First run
 
-**Basic keep-awake works immediately** — click the eye and it goes orange. No permissions,
+**Basic keep awake works immediately.** Click the eye and it goes orange. No permissions,
 no setup.
 
 **Closed-lid mode needs one administrator prompt.** Right-click the eye and tick
 **Keep Awake With Lid Closed**. macOS asks for your password once; after that it's silent
-forever. See [Permissions](#permissions--exactly-what-gets-installed) for exactly what that
+forever. See [Permissions](#permissions-exactly-what-gets-installed) for exactly what that
 installs and how to remove it.
 
 **To start it automatically**, open **Settings › General** and tick **Launch Unblinking at
@@ -192,13 +192,13 @@ backups, a server on your desk, remote sessions you're SSH'd into.
 
 > [!WARNING]
 > With closed-lid mode on, your Mac **will not sleep**. On battery, in a closed bag, it will
-> run until flat and get hot. The default battery policy is *Never turn off automatically* —
+> run until flat and get hot. The default battery policy is *Never turn off automatically*,
 > the app warns you but respects your choice. Change it in Settings › Closed Lid if you'd
 > rather it protected you.
 
 ---
 
-## Permissions — exactly what gets installed
+## Permissions: exactly what gets installed
 
 Disabling lid-close sleep needs root. Rather than asking for your password every single
 time, Unblinking asks **once** and installs a `sudoers` drop-in scoped to two exact
@@ -210,8 +210,8 @@ commands:
 <you> ALL=(root) NOPASSWD: /usr/bin/pmset -a disablesleep 0, /usr/bin/pmset -a disablesleep 1
 ```
 
-That's the whole grant. No wildcards. Every other `pmset` subcommand — and every other
-command on your system — still requires a password. There's a test that proves it:
+That's the whole grant. No wildcards. Every other `pmset` subcommand, and every other
+command on your system, still requires a password. There's a test that proves it:
 
 ```bash
 sudo -n /usr/bin/pmset -a disablesleep 1   # allowed
@@ -240,16 +240,16 @@ the app works with zero privileges.
 <img src="assets/settings-closed-lid.png" width="410" alt="Closed Lid settings tab">
 </div>
 
-**General** — launch at login, default duration, restore state at launch, **menu bar icon
+**General**: launch at login, default duration, restore state at launch, **menu bar icon
 style**, and elapsed/remaining time in the menu bar.
 
-**Sleep** — which assertions to hold: display (`-d`), idle system (`-i`), disk (`-m`),
+**Sleep**: which assertions to hold: display (`-d`), idle system (`-i`), disk (`-m`),
 system-while-on-power (`-s`).
 
-**Closed Lid** — enable/disable, live "would closing the lid sleep this Mac?" status,
+**Closed Lid**: enable/disable, live "would closing the lid sleep this Mac?" status,
 battery policy, and permission management (view the exact rule, or remove it).
 
-**About** — version and links.
+**About**: version and links.
 
 ---
 
@@ -268,7 +268,7 @@ Two independent layers:
 that clears it:
 
 - turning off, session timeout, Quit, logout, `SIGTERM`/`SIGINT`
-- **at next launch** — the backstop for `kill -9`, a kernel panic or power loss. If the flag
+- **at next launch**, the backstop for `kill -9`, a kernel panic or power loss. If the flag
   is still set, the app either clears it silently (its own breadcrumb says it was the owner)
   or asks you first (something else set it)
 
@@ -278,7 +278,7 @@ and exits the moment the app does. **A crashed app cannot leave one running.**
 ### Stray processes
 
 The menu reports `caffeinate` processes started outside the app and lets you stop them
-individually. It never bulk-kills — plenty of tools spawn `caffeinate` legitimately (the
+individually. It never bulk kills, because plenty of tools spawn `caffeinate` legitimately (the
 `claude` CLI runs `caffeinate -i -t 300`, for one), and silently killing someone else's
 assertion would break their work.
 
@@ -298,7 +298,7 @@ assertion would break their work.
 | `LoginItem.swift` | Launch at login via `SMAppService` |
 | `SettingsView.swift` | Settings UI |
 
-`PrivilegedRunner` is a protocol — the sudoers implementation is one conforming type, and an
+`PrivilegedRunner` is a protocol. The sudoers implementation is one conforming type, and an
 `SMAppService` root daemon could replace it without touching call sites.
 
 Built on `NSStatusItem` rather than SwiftUI's `MenuBarExtra`, because `MenuBarExtra` opens
@@ -322,13 +322,13 @@ for a command that needs none. To test a grant, exercise it.
 
 **3. `AppleClamshellCausesSleep` is not a forecast.** It reads like the perfect answer to
 "will closing the lid sleep this Mac?" but doesn't vary with `SleepDisabled` at all while
-the lid is open — it describes the *current* clamshell state, not a future one.
+the lid is open. It describes the *current* clamshell state, not a future one.
 
 ---
 
 ## Testing
 
-67 tests, run against the real system rather than mocks — real `caffeinate` processes, real
+71 tests, run against the real system rather than mocks: real `caffeinate` processes, real
 `pmset` output, real signals.
 
 ```bash
@@ -351,27 +351,30 @@ pmset -g live | grep SleepDisabled      # 1 while closed-lid mode is on
 sudo -l                                 # the grant is only those two commands
 ```
 
-The end-to-end test nothing substitutes for:
+The end to end test nothing substitutes for:
 
 ```bash
-while true; do date >> ~/lidtest.log; sleep 5; done
+./Scripts/lidtest.sh            # start, then close the lid
+./Scripts/lidtest.sh --report   # after you reopen
 ```
 
-Turn on closed-lid mode, shut the lid for two minutes, reopen. Unbroken five-second entries
-across the closed period means it works. Repeat with closed-lid mode **off** and the log
-should show a gap — proving the feature is what's doing the work, not something incidental.
+It records a heartbeat every 30 seconds alongside battery, power source and thermal state,
+so a long run can be checked for gaps and for the things a short run cannot surface: drain,
+throttling, or macOS sleeping anyway after some delay. Plug in first. An unattended closed
+laptop on battery is how you flatten one.
 
-**Measured on a MacBook Air (M1), macOS 26.2, on battery:**
+Run it once with closed-lid mode **on** and once with it **off**. Without that second run,
+an absent gap could just mean the machine never tried to sleep, so the negative control is
+what makes the result mean anything.
 
-| | Lid closed, app off | Lid closed, closed-lid mode on |
-|---|---|---|
-| Gap in the log | **68 s** | **none** (156 s elapsed, 155 s ticking) |
-| `Clamshell Sleep` in `pmset -g log` | 1 | 0 |
-| Wake event | `DriverReason:lid` | none — nothing slept |
+Cross-check any gap against `pmset -g log`. The kernel records
+`Entering Sleep state due to 'Clamshell Sleep'` with a timestamp, so you can confirm a gap
+is genuine sleep rather than a stalled shell.
 
-Cross-check the log gap against `pmset -g log`; the kernel records
-`Entering Sleep state due to 'Clamshell Sleep'` with a timestamp, so you can confirm the
-gap is real sleep rather than a stalled shell.
+Verified on a MacBook Air (M1), macOS 26.2: with closed-lid mode off the machine slept the
+moment the lid shut and the kernel logged it. With closed-lid mode on it kept running and
+logged no sleep at all. A longer endurance run is under way and the figure will be
+published here once it finishes.
 
 ---
 
@@ -389,7 +392,7 @@ the script header.
 
 ## Contributing
 
-Contributions are genuinely welcome — this is a small, focused codebase that's easy to get
+Contributions are genuinely welcome. This is a small, focused codebase that's easy to get
 into.
 
 1. Fork the repo and create a branch: `git checkout -b feature/your-idea`
@@ -416,23 +419,23 @@ version, your Mac model, and what you expected.
 
 If Unblinking saved you from a dead build or a flat battery:
 
-⭐ **[Star the repo](https://github.com/amr-ahmed-hamdy/unblinking)** — the single most useful thing
+⭐ **[Star the repo](https://github.com/amr-ahmed-hamdy/unblinking)**, the single most useful thing
 you can do. It's how other people find it.
 
-🔧 **Contribute** — pick something from the list above, or bring your own idea. PRs get
+🔧 **Contribute**: pick something from the list above, or bring your own idea. PRs get
 reviewed properly.
 
-🐛 **[Report a bug](https://github.com/amr-ahmed-hamdy/unblinking/issues)** — especially anything
+🐛 **[Report a bug](https://github.com/amr-ahmed-hamdy/unblinking/issues)**, especially anything
 involving sleep behaviour on hardware I can't test.
 
-🗣 **Tell someone** — if you know a developer who's lost a job to a closed lid, they'll want
+🗣 **Tell someone.** If you know a developer who's lost a job to a closed lid, they'll want
 this.
 
 ---
 
 ## Author
 
-**Amr Ahmed Hamdy** — Senior Software Engineer, AI-Driven Development
+**Amr Ahmed Hamdy**, Senior Software Engineer, AI Driven Development
 
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-amr--hamdy-0A66C2?logo=linkedin&logoColor=white)](https://www.linkedin.com/in/amr-hamdy/)
 
