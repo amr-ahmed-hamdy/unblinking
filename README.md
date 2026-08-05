@@ -359,7 +359,19 @@ while true; do date >> ~/lidtest.log; sleep 5; done
 
 Turn on closed-lid mode, shut the lid for two minutes, reopen. Unbroken five-second entries
 across the closed period means it works. Repeat with closed-lid mode **off** and the log
-should show a gap — proving the feature is what's doing the work.
+should show a gap — proving the feature is what's doing the work, not something incidental.
+
+**Measured on a MacBook Air (M1), macOS 26.2, on battery:**
+
+| | Lid closed, app off | Lid closed, closed-lid mode on |
+|---|---|---|
+| Gap in the log | **68 s** | **none** (156 s elapsed, 155 s ticking) |
+| `Clamshell Sleep` in `pmset -g log` | 1 | 0 |
+| Wake event | `DriverReason:lid` | none — nothing slept |
+
+Cross-check the log gap against `pmset -g log`; the kernel records
+`Entering Sleep state due to 'Clamshell Sleep'` with a timestamp, so you can confirm the
+gap is real sleep rather than a stalled shell.
 
 ---
 
