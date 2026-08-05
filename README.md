@@ -61,7 +61,7 @@ that is either shut or wide open removes that entire class of mistake.
 | 🔒 **Minimal privileges** | One admin prompt, ever — scoped to exactly two commands |
 | 🧹 **Never leaves a mess** | Cleans up on quit, on crash, and on next launch |
 | 🚀 **Launch at login** | Modern `SMAppService` registration |
-| ♿ **Accessible** | Full VoiceOver labels, respects Reduce Motion |
+| ♿ **Considerate** | Menu bar item is labelled for VoiceOver and reports its state; respects Reduce Motion |
 | 🪶 **Tiny and native** | Pure Swift + AppKit. No dependencies, no Electron, no telemetry |
 
 ### The three states
