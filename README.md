@@ -56,7 +56,7 @@ that is either shut or wide open removes that entire class of mistake.
 | 💤 **Real closed-lid support** | Keeps working when you shut the lid, the thing `caffeinate` can't do |
 | 🔆 **Impossible to miss** | A shut eye when off; an open, breathing eye when on |
 | ⏱ **Timed sessions** | 15m / 30m / 1h / 2h / 4h / indefinitely, with a live countdown |
-| 🔋 **Battery guards** | Never / turn off when unplugged / turn off below a threshold |
+| 🔋 **Battery guards** | Never / turn off when unplugged / turn off below a threshold, applied the moment they become true |
 | ⚠️ **Stray process detection** | Finds `caffeinate` started elsewhere and lets you stop it |
 | 🔒 **Minimal privileges** | One admin prompt, ever, scoped to exactly two commands |
 | 🧹 **Never leaves a mess** | Cleans up on quit, on crash, and on next launch |
@@ -160,7 +160,7 @@ That builds a Release copy, installs it to `/Applications`, and launches it. Or 
 no setup.
 
 **Closed-lid mode needs one administrator prompt.** Right-click the eye and tick
-**Keep Awake With Lid Closed**. macOS asks for your password once; after that it's silent
+**Keep Awake with the Lid Closed**. macOS asks for your password once; after that it's silent
 forever. See [Permissions](#permissions-exactly-what-gets-installed) for exactly what that
 installs and how to remove it.
 
@@ -174,7 +174,7 @@ login**. If macOS asks you to approve a background item, it appears under
 
 ```
 Left-click    →  toggle on/off instantly
-Right-click   →  durations, closed-lid mode, warnings, settings
+Right-click   →  duration, closed-lid mode, warnings, settings
 ⌘,            →  settings
 ⌘Q            →  quit
 ```
@@ -184,7 +184,7 @@ off releases everything immediately.
 
 ### Closed-lid mode
 
-Enable **Keep Awake With Lid Closed** (in the menu, or Settings › Closed Lid). The first
+Enable **Keep Awake with the Lid Closed** (in the menu, or Settings › Closed Lid). The first
 time you use it, macOS asks for your administrator password. After that it's silent.
 
 Use it when you want to shut the lid and keep working: long builds, downloads, renders,
@@ -195,6 +195,37 @@ backups, a server on your desk, remote sessions you're SSH'd into.
 > run until flat and get hot. The default battery policy is *Never turn off automatically*,
 > the app warns you but respects your choice. Change it in Settings › Closed Lid if you'd
 > rather it protected you.
+
+### Battery policy
+
+Closed-lid mode is the part that can flatten a battery, so it gets its own guard. Pick one in
+**Settings › Closed Lid › On battery**:
+
+| Option | On battery |
+|---|---|
+| **Never turn off automatically** (default) | Closed-lid mode holds at any charge, down to 1%. The app warns you and respects your choice. |
+| **Turn off when unplugged from power** | Closed-lid mode is withdrawn the moment the charger comes out, and restored when you plug back in. Charge is irrelevant. |
+| **Turn off below a battery level** | Closed-lid mode is withdrawn once the charge reaches your threshold, and restored if it climbs back above it. |
+
+Two things worth knowing.
+
+**Only closed-lid mode is withdrawn.** The session keeps running and your Mac stays awake
+while the lid is open. The guard exists for the system-wide sleep flag, which is the part that
+can run a machine flat in a closed bag. Plain `caffeinate` assertions cost nothing extra on
+battery, so they are left alone.
+
+**It applies the moment it becomes true**, not at the next power event. Switch to *Turn off
+when unplugged* while already unplugged, or to *Turn off below a battery level* while already
+under it, and closed-lid mode goes off straight away. Same for editing the threshold, in both
+directions. You get a notification naming the condition that tripped, and the menu carries a
+line for as long as it stays paused:
+
+```
+⚠ Closed-lid mode paused on battery (15%)
+```
+
+The threshold is a floor, so it is inclusive: at exactly 20% against a 20% threshold,
+closed-lid mode is withdrawn. A Mac with no battery at all never has it withheld.
 
 ---
 
@@ -246,8 +277,10 @@ style**, and elapsed/remaining time in the menu bar.
 **Sleep**: which assertions to hold: display (`-d`), idle system (`-i`), disk (`-m`),
 system-while-on-power (`-s`).
 
-**Closed Lid**: enable/disable, live "would closing the lid sleep this Mac?" status,
-battery policy, and permission management (view the exact rule, or remove it).
+**Closed Lid**: enable/disable, live "would closing the lid sleep this Mac?" status (polled
+from the real `SleepDisabled` flag, so it stays honest even if something else changes it),
+[battery policy](#battery-policy), and permission management (view the exact rule, or remove
+it).
 
 **About**: version and links.
 
@@ -291,7 +324,7 @@ assertion would break their work.
 | `CaffeineProcess.swift` | The `caffeinate` child, including the `-w` watchdog |
 | `ClamshellController.swift` | Reads and writes the `SleepDisabled` flag |
 | `PrivilegeBroker.swift` | sudoers rule: generate, validate, install, remove |
-| `PowerEnvironment.swift` | Lid state, AC vs battery, charge level, power notifications |
+| `PowerEnvironment.swift` | Lid state, AC vs battery, charge level, power notifications. `PowerSourceReading` is the injectable seam the battery policies are tested through |
 | `StatusItemController.swift` | Menu bar item, click routing, menu |
 | `EyeIcon.swift` | Vector eye, template when off and full colour when active |
 | `StrayProcessWatcher.swift` | Finds `caffeinate` running outside the app |
@@ -307,7 +340,7 @@ label rather than animating it.
 
 ---
 
-## Three macOS traps this project hit
+## Four macOS traps this project hit
 
 Documented because each one costs an afternoon:
 
@@ -324,11 +357,25 @@ for a command that needs none. To test a grant, exercise it.
 "will closing the lid sleep this Mac?" but doesn't vary with `SleepDisabled` at all while
 the lid is open. It describes the *current* clamshell state, not a future one.
 
+**4. `Process.waitUntilExit()` runs the calling thread's run loop.** So shelling out from the
+main thread re-enters CoreFoundation and fires run loop observers, SwiftUI's update observer
+among them, from inside an update already in progress. Reading `pmset` in a SwiftUI `body`
+crashed the app outright:
+
+```
+waitUntilExit → _CFRunLoopRunSpecificWithOptions → __CFRunLoopDoObservers
+  → __CFRUNLOOP_IS_CALLING_OUT_TO_AN_OBSERVER_CALLBACK_FUNCTION__
+  → EXC_BAD_ACCESS (SIGSEGV) at 0x0
+```
+
+Waiting on a semaphore signalled from `terminationHandler` never touches the run loop, so it
+cannot re-enter. Views poll from a `.task` rather than shelling out while rendering.
+
 ---
 
 ## Testing
 
-71 tests, run against the real system rather than mocks: real `caffeinate` processes, real
+91 tests, run against the real system rather than mocks: real `caffeinate` processes, real
 `pmset` output, real signals.
 
 ```bash
@@ -342,6 +389,14 @@ Notable coverage: the assertion actually appearing in `pmset -g assertions` matc
 no orphan surviving `kill -9`; `caffeinate -w` verified against the real binary; the
 generated sudoers rule handed to real `visudo`; and the grant refusing every command outside
 its two.
+
+The battery policies are the exception to "real system, not mocks", and deliberately so. They
+are decided entirely by charge and power source, and neither can be staged on real hardware:
+a test machine is plugged in or it is not, and its charge is whatever it happens to be. So
+`PowerSourceReading` is injected, which lets the suite cover every policy at every boundary,
+including a sweep of all 18 threshold values against all 101 charge levels, plus switching
+into a policy while already in its triggering condition, unplugging mid-session, and plugging
+back in.
 
 ### Verifying it yourself
 
