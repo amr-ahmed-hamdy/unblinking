@@ -16,8 +16,8 @@ enum AppInfo {
     // Change them here and everything that links out follows.
 
     static let linkedIn = URL(string: "https://www.linkedin.com/in/amr-hamdy/")!
-    static let repository = URL(string: "https://github.com/amrhamdy/unblinking")!
-    static let issues = URL(string: "https://github.com/amrhamdy/unblinking/issues")!
+    static let repository = URL(string: "https://github.com/amr-ahmed-hamdy/unblinking")!
+    static let issues = URL(string: "https://github.com/amr-ahmed-hamdy/unblinking/issues")!
 
     static var version: String {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"

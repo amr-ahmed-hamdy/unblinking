@@ -1,9 +1,3 @@
-<!--
-  Before publishing, replace the placeholder URL:
-    - github.com/amrhamdy/unblinking   → your actual repo
-  The same URL lives in Unblinking/AppInfo.swift — update both.
--->
-
 <div align="center">
 
 <img src="assets/app-icon.png" width="128" alt="Unblinking app icon">
@@ -118,7 +112,7 @@ Requires **macOS 13 (Ventura) or later**. Apple Silicon and Intel both supported
 
 ### Option A — download the release
 
-1. Download `Unblinking.dmg` from [Releases](https://github.com/amrhamdy/unblinking/releases)
+1. Download `Unblinking.dmg` from [Releases](https://github.com/amr-ahmed-hamdy/unblinking/releases)
 2. Open the DMG and drag **Unblinking** into **Applications**
 3. Eject the DMG, then open **Unblinking** from Applications
 4. An eye appears at the right-hand end of your menu bar. There is no Dock icon and no
@@ -137,7 +131,7 @@ Requires **macOS 13 (Ventura) or later**. Apple Silicon and Intel both supported
 Requires **Xcode 16 or later** (developed on Xcode 26.4 / macOS 26.2).
 
 ```bash
-git clone https://github.com/amrhamdy/unblinking.git
+git clone https://github.com/amr-ahmed-hamdy/unblinking.git
 cd unblinking
 ./Scripts/install-local.sh
 ```
@@ -386,7 +380,7 @@ into.
 - [ ] Localisation
 - [ ] Homebrew cask
 
-Found a bug? [Open an issue](https://github.com/amrhamdy/unblinking/issues) with your macOS
+Found a bug? [Open an issue](https://github.com/amr-ahmed-hamdy/unblinking/issues) with your macOS
 version, your Mac model, and what you expected.
 
 ---
@@ -395,13 +389,13 @@ version, your Mac model, and what you expected.
 
 If Unblinking saved you from a dead build or a flat battery:
 
-⭐ **[Star the repo](https://github.com/amrhamdy/unblinking)** — the single most useful thing
+⭐ **[Star the repo](https://github.com/amr-ahmed-hamdy/unblinking)** — the single most useful thing
 you can do. It's how other people find it.
 
 🔧 **Contribute** — pick something from the list above, or bring your own idea. PRs get
 reviewed properly.
 
-🐛 **[Report a bug](https://github.com/amrhamdy/unblinking/issues)** — especially anything
+🐛 **[Report a bug](https://github.com/amr-ahmed-hamdy/unblinking/issues)** — especially anything
 involving sleep behaviour on hardware I can't test.
 
 🗣 **Tell someone** — if you know a developer who's lost a job to a closed lid, they'll want
