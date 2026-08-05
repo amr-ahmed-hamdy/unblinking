@@ -1,8 +1,17 @@
 #!/bin/bash
 #
-# Builds, signs, notarizes and packages Unblinking for distribution to other people.
+# Builds, signs and packages Unblinking for distribution to other people.
 #
-# One-time setup:
+# No Apple Developer Program membership? Use ad-hoc signing:
+#
+#     SIGNING_IDENTITY=- ./Scripts/release.sh
+#
+# That produces a working DMG. Recipients clear the quarantine flag once, either with
+#     xattr -dr com.apple.quarantine /Applications/Unblinking.app
+# or via System Settings > Privacy & Security > Open Anyway.
+#
+# With a paid membership you can notarize instead, so it opens with no warning at all.
+# One-time setup for that:
 #
 #   1. Find your signing identity and Team ID:
 #        security find-identity -v -p codesigning

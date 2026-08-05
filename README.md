@@ -12,7 +12,7 @@ The `caffeinate` command can't do that. This app can.
 [![Swift](https://img.shields.io/badge/Swift-5.9-F05138?logo=swift&logoColor=white)](https://swift.org)
 [![Apple Silicon](https://img.shields.io/badge/Apple%20Silicon-native-000000?logo=apple&logoColor=white)](https://support.apple.com/en-us/HT211814)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-63%20passing-brightgreen)](#testing)
+[![Tests](https://img.shields.io/badge/tests-67%20passing-brightgreen)](#testing)
 
 <img src="assets/menu.png" width="480" alt="Unblinking menu bar app showing its menu">
 
@@ -118,17 +118,32 @@ Requires **macOS 13 (Ventura) or later**. Apple Silicon and Intel both supported
 4. An eye appears at the right-hand end of your menu bar. There is no Dock icon and no
    window — the menu bar is the whole app
 
-> [!NOTE]
-> **If macOS says the app "cannot be opened because Apple cannot check it for malware":**
-> the build you downloaded isn't notarized. Open **System Settings › Privacy & Security**,
-> scroll to the Security section, and click **Open Anyway** next to the Unblinking message,
-> then confirm. You only do this once.
+> [!IMPORTANT]
+> **Unblinking is not notarized**, so macOS will say it "cannot be opened because Apple
+> cannot check it for malware." Notarization requires a paid Apple Developer Program
+> membership; this is a free tool and doesn't have one.
 >
-> macOS 15 removed the old right-click → Open shortcut, so System Settings is the only way.
+> Two ways past it, once:
+>
+> **Terminal** — fastest, and this is a terminal-shaped audience:
+>
+> ```bash
+> xattr -dr com.apple.quarantine /Applications/Unblinking.app
+> ```
+>
+> **Or the GUI** — **System Settings › Privacy & Security**, scroll to Security, click
+> **Open Anyway** next to the Unblinking message, then confirm. macOS 15 removed the old
+> right-click → Open shortcut, so this is the only clickable route.
+>
+> What that flag actually is: macOS tags *downloaded* files with `com.apple.quarantine`,
+> and Gatekeeper's dialog fires on that tag alone. Removing it is exactly what "Open
+> Anyway" does. Apps you build yourself are never tagged — which is why **Option B below
+> has no Gatekeeper step at all.**
 
-### Option B — build it yourself
+### Option B — build it yourself (no Gatekeeper prompt)
 
-Requires **Xcode 16 or later** (developed on Xcode 26.4 / macOS 26.2).
+Requires **Xcode 16 or later** (developed on Xcode 26.4 / macOS 26.2). Locally built apps
+are never quarantined, so this path just works.
 
 ```bash
 git clone https://github.com/amr-ahmed-hamdy/unblinking.git
@@ -313,7 +328,7 @@ the lid is open — it describes the *current* clamshell state, not a future one
 
 ## Testing
 
-63 tests, run against the real system rather than mocks — real `caffeinate` processes, real
+67 tests, run against the real system rather than mocks — real `caffeinate` processes, real
 `pmset` output, real signals.
 
 ```bash
