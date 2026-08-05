@@ -193,6 +193,60 @@ final class SudoersRuleTests: XCTestCase {
         XCTAssertFalse(SudoersRunner.isValidUserName("quote\"user"))
     }
 
+    /// The rule must never pass through a file an unprivileged process can write.
+    ///
+    /// Regression guard for a root escalation: the rule used to be staged in the user's
+    /// temp directory and validated there, leaving the whole duration of the password
+    /// dialog for same-uid malware to swap the contents before root read them.
+    func testInstallNeverStagesTheRuleOutsideRoot() {
+        let script = SudoersRunner.installScript(user: "testuser")
+
+        XCTAssertTrue(
+            script.contains("/private/var/root/"),
+            "the rule must be staged somewhere only root can write"
+        )
+        for userWritable in ["/tmp/", "/var/folders/", "$TMPDIR", "unblinking-sudoers-"] {
+            XCTAssertFalse(
+                script.contains(userWritable),
+                "\(userWritable) is reachable by an unprivileged process"
+            )
+        }
+    }
+
+    /// visudo must check the same bytes install copies. Validating one file and installing
+    /// another is the whole bug.
+    func testValidationAndInstallTargetTheSameFile() {
+        let script = SudoersRunner.installScript(user: "testuser")
+        XCTAssertTrue(script.contains("/usr/sbin/visudo -cf \"$d/rule\""))
+        XCTAssertTrue(script.contains("install -m 0440 -o root -g wheel \"$d/rule\""))
+        XCTAssertTrue(
+            script.range(of: "visudo")!.lowerBound < script.range(of: "install -m")!.lowerBound,
+            "validation must precede installation"
+        )
+    }
+
+    /// An unquoted heredoc delimiter would let the shell expand the rule text.
+    func testHeredocIsQuotedAndUnguessable() {
+        let script = SudoersRunner.installScript(user: "testuser")
+        XCTAssertTrue(script.contains("<<'UNBLINKING_RULE_"), "delimiter must be quoted")
+        XCTAssertNotEqual(
+            SudoersRunner.installScript(user: "testuser"),
+            SudoersRunner.installScript(user: "testuser"),
+            "the delimiter should be random per invocation"
+        )
+    }
+
+    /// The script is multi-line, and AppleScript string literals cannot span lines — so
+    /// the escaping has to survive a round trip or the install silently breaks.
+    func testMultiLineScriptSurvivesAppleScriptEscaping() {
+        let escaped = SudoersRunner.escapeForAppleScript(
+            SudoersRunner.installScript(user: "testuser")
+        )
+        XCTAssertFalse(escaped.contains("\n"), "a raw newline is a syntax error in AppleScript")
+        XCTAssertTrue(escaped.contains("\\n"), "newlines must travel as escapes")
+        XCTAssertFalse(escaped.contains("\"$d/rule\""), "unescaped quotes would end the literal")
+    }
+
     func testAppleScriptEscaping() {
         XCTAssertEqual(
             SudoersRunner.escapeForAppleScript(#"/bin/rm -f "/tmp/a b""#),

@@ -92,9 +92,65 @@ struct SudoersRunner: PrivilegedRunner {
     }
 
     /// Escapes a shell command for embedding in an AppleScript string literal.
+    ///
+    /// Newlines matter as much as quotes here: AppleScript string literals cannot span
+    /// lines, so a multi-line script has to travel as `\n` escapes. AppleScript turns
+    /// those back into real newlines before handing the string to the shell, which is what
+    /// lets `installScript` use a heredoc.
     static func escapeForAppleScript(_ text: String) -> String {
         text.replacingOccurrences(of: "\\", with: "\\\\")
             .replacingOccurrences(of: "\"", with: "\\\"")
+            .replacingOccurrences(of: "\n", with: "\\n")
+    }
+
+    /// The whole install, as one script for root to run.
+    ///
+    /// The rule is written, validated *and* installed inside the privileged context, in a
+    /// directory only root can reach (`/private/var/root` is `drwxr-x--- root:wheel`).
+    ///
+    /// It previously staged the rule in the user's temp directory, validated it there with
+    /// `visudo -c`, and only then asked root to `install` that path. Mode 0700 on that
+    /// directory keeps *other users* out but not other processes running as *the same
+    /// user* — and the gap between validation and root reading the file spans the entire
+    /// password dialog. Since `visudo -c` checks syntax only and follows symlinks, and
+    /// `install` dereferences them, same-uid malware could substitute
+    /// `<user> ALL=(ALL) NOPASSWD: ALL` while the user typed their password and root would
+    /// install it. No precise race was needed: an attacker can simply rewrite in a loop.
+    /// That is a root escalation, and on macOS the password prompt is exactly the boundary
+    /// it crossed — being in the `admin` group is not the same as being root.
+    ///
+    /// Now the same bytes `visudo` validates are the bytes `install` copies, and nothing
+    /// unprivileged can touch them at any point.
+    static func installScript(user: String) -> String {
+        // A random delimiter, and quoted, so the heredoc cannot be terminated early or
+        // expanded. The rule text is derived from a whitelist-validated username, so it
+        // cannot contain a delimiter anyway — this is belt and braces.
+        let delimiter = "UNBLINKING_RULE_"
+            + UUID().uuidString.replacingOccurrences(of: "-", with: "")
+        let removals = legacyRuleFilePaths.map { "'\($0)'" }.joined(separator: " ")
+
+        // Built line by line rather than as one multi-line literal: the closing heredoc
+        // delimiter must sit at column 0, and that is easier to guarantee explicitly than
+        // to reason about Swift's indentation stripping.
+        return [
+            "umask 077",
+            "d=$(/usr/bin/mktemp -d /private/var/root/unblinking.XXXXXX) || exit 1",
+            "/bin/cat > \"$d/rule\" <<'\(delimiter)'",
+            ruleText(user: user),
+            delimiter,
+            // Validate before anything goes near /etc: a malformed sudoers file can lock
+            // the user out of sudo entirely, so this check is not optional.
+            "/usr/sbin/visudo -cf \"$d/rule\" && "
+                + "/usr/bin/install -m 0440 -o root -g wheel \"$d/rule\" "
+                + "'\(ruleFilePath)' && "
+                // 0440 root:wheel — sudo silently ignores drop-ins with looser
+                // permissions. The same elevated call clears any file left behind under a
+                // previous name, so the user isn't asked for a password twice.
+                + "/bin/rm -f \(removals)",
+            "rc=$?",
+            "/bin/rm -rf \"$d\"",
+            "exit $rc",
+        ].joined(separator: "\n")
     }
 
     // MARK: - PrivilegedRunner
@@ -147,32 +203,7 @@ struct SudoersRunner: PrivilegedRunner {
             )
         }
 
-        // The per-user temp directory is mode 0700, so no other user can swap this file
-        // out between validation and install.
-        let staging = FileManager.default.temporaryDirectory
-            .appendingPathComponent("unblinking-sudoers-\(UUID().uuidString)")
-        defer { try? FileManager.default.removeItem(at: staging) }
-
-        do {
-            try Self.ruleText(user: user).write(to: staging, atomically: true, encoding: .utf8)
-        } catch {
-            throw PrivilegeError.installFailed(error.localizedDescription)
-        }
-
-        // Validate BEFORE anything goes near /etc. A malformed sudoers file can lock the
-        // user out of sudo entirely, so this check is not optional.
-        let validation = Shell.run("/usr/sbin/visudo", ["-c", "-f", staging.path])
-        guard validation.succeeded else {
-            throw PrivilegeError.validationFailed(validation.combinedOutput)
-        }
-
-        // 0440 root:wheel — sudo silently ignores drop-ins with looser permissions.
-        // The same elevated call clears any inert file from the old dotted name, so the
-        // user isn't asked for a password twice.
-        let command = "/usr/bin/install -m 0440 -o root -g wheel "
-            + "'\(staging.path)' '\(Self.ruleFilePath)' && "
-            + "/bin/rm -f \(Self.legacyRuleFilePaths.map { "'\($0)'" }.joined(separator: " "))"
-        try runWithAdministratorPrivileges(command)
+        try runWithAdministratorPrivileges(Self.installScript(user: user))
 
         guard isAuthorizationInstalled else {
             throw PrivilegeError.installFailed(
