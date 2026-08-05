@@ -14,16 +14,16 @@ import AppKit
 ///   Mac awake.
 ///
 /// The eye deliberately does **not** blink. A closed-eye frame is pixel-for-pixel the off
-/// state, so a blinking icon would flash "asleep" every few seconds — exactly the confusion
+/// state, so a blinking icon would flash "asleep" every few seconds, exactly the confusion
 /// this app exists to remove. Urgency is carried by colour and tempo instead.
 @MainActor
 enum EyeIcon {
     enum State: Hashable {
-        /// Closed eye — nothing is being kept awake.
+        /// Closed eye, nothing is being kept awake.
         case off
-        /// Open orange eye, slow breath — assertions held.
+        /// Open orange eye, slow breath, assertions held.
         case on
-        /// Open red eye at double tempo — lid-close sleep is disabled system-wide, the one
+        /// Open red eye at double tempo, lid-close sleep is disabled system-wide, the one
         /// state that can genuinely flatten a battery in a closed bag.
         case onClosedLid
     }
@@ -37,7 +37,7 @@ enum EyeIcon {
     /// One full cycle of the calm breath: 36 frames at 12fps = 3s.
     static let frameCount = 36
 
-    /// The urgent breath runs at double speed — 18 frames, 1.5s. A divisor of
+    /// The urgent breath runs at double speed, 18 frames, 1.5s. A divisor of
     /// `frameCount`, so both tempos return to zero together and the loop stays seamless.
     private static let urgentPeriod = 18
 
@@ -103,7 +103,7 @@ enum EyeIcon {
         }
 
         if style == .subtle {
-            // Template art, so colour carries no meaning — the lid state is distinguished
+            // Template art, so colour carries no meaning, the lid state is distinguished
             // by a badge, and the iris is a ring rather than a disc so the open eye doesn't
             // read as a blank stare.
             drawOpenEye(iris: .black, glow: 0, hollowIris: true)
@@ -175,7 +175,7 @@ enum EyeIcon {
         return path
     }
 
-    /// A single downward curve — a shut lid — plus three short lashes.
+    /// A single downward curve, a shut lid, plus three short lashes.
     private static func drawClosedEye(color: NSColor) {
         color.setStroke()
 
@@ -204,10 +204,10 @@ enum EyeIcon {
     }
 
     /// - Parameter hollowIris: draw the iris as a ring rather than a disc with a dark
-    ///   pupil. Template images have no dark — only opaque and transparent — so a filled
+    ///   pupil. Template images have no dark, only opaque and transparent, so a filled
     ///   iris there would be a featureless white blob.
     private static func drawOpenEye(iris: NSColor, glow: CGFloat, hollowIris: Bool = false) {
-        // Halo built from stacked translucent discs — cheap, and unlike a blur it renders
+        // Halo built from stacked translucent discs, cheap, and unlike a blur it renders
         // identically at any scale.
         if glow > 0 {
             for ring in stride(from: 5, through: 1, by: -1) {

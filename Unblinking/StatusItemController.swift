@@ -3,7 +3,7 @@ import Combine
 
 /// The menu bar item: icon, click routing, and menu.
 ///
-/// Built on `NSStatusItem` rather than SwiftUI's `MenuBarExtra` for two reasons —
+/// Built on `NSStatusItem` rather than SwiftUI's `MenuBarExtra` for two reasons.
 /// `MenuBarExtra` opens its content on every click, so single-click-to-toggle is
 /// impossible, and its label is snapshotted rather than animated.
 @MainActor
@@ -38,7 +38,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
 
         // Appearance settings change the menu bar item without any wake-state change, and
         // nothing else would repaint it. With Vivid the animation timer happened to mask
-        // this — it repaints constantly — but Subtle and Colour run no timer at all, so
+        // this, it repaints constantly, but Subtle and Colour run no timer at all, so
         // switching style or toggling the clock left the old icon on screen until the next
         // toggle.
         //
@@ -80,7 +80,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
 
     /// Pure, so the routing can be pinned in tests.
     ///
-    /// A nil event means the press did not come from the mouse — VoiceOver and other
+    /// A nil event means the press did not come from the mouse, VoiceOver and other
     /// assistive presses arrive with no `NSApp.currentEvent`. Those must map to the
     /// primary action rather than being dropped, which is what an earlier
     /// `guard let event else { return }` did: the status item was simply dead to
@@ -200,7 +200,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
             separatorIfNeeded()
             let battery = PowerEnvironment.batteryPercentage.map { " (\($0)%)" } ?? ""
             let warning = NSMenuItem(
-                title: "⚠ On battery\(battery) — sleep is disabled",
+                title: "⚠ On battery\(battery), sleep is disabled",
                 action: nil,
                 keyEquivalent: ""
             )
@@ -220,7 +220,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         let strayMenu = NSMenu()
 
         let explanation = NSMenuItem(
-            title: "Started by something else — stop only what you recognise.",
+            title: "Started by something else, stop only what you recognise.",
             action: nil,
             keyEquivalent: ""
         )
@@ -256,8 +256,8 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         }
 
         return coordinator.clamshellActive
-            ? "Awake, lid close included — \(suffix)"
-            : "Awake — \(suffix)"
+            ? "Awake, lid close included, \(suffix)"
+            : "Awake, \(suffix)"
     }
 
     // MARK: - Actions
@@ -351,10 +351,10 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     }
 
     private var tooltip: String {
-        guard coordinator.isActive else { return "Unblinking — off. Click to keep this Mac awake." }
+        guard coordinator.isActive else { return "Unblinking, off. Click to keep this Mac awake." }
         return coordinator.clamshellActive
-            ? "Unblinking — awake, including when the lid is closed. Click to turn off."
-            : "Unblinking — awake. Click to turn off."
+            ? "Unblinking, awake, including when the lid is closed. Click to turn off."
+            : "Unblinking, awake. Click to turn off."
     }
 
     // MARK: - Timers

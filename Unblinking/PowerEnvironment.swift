@@ -29,7 +29,7 @@ enum PowerEnvironment {
     ///
     /// Note for anyone tempted to use `IOPMrootDomain`'s `AppleClamshellCausesSleep`
     /// instead: it is not a forecast. Measured on macOS 26 with the lid open, it reads
-    /// "No" whether `SleepDisabled` is 0 or 1 — it describes the *current* clamshell
+    /// "No" whether `SleepDisabled` is 0 or 1, it describes the *current* clamshell
     /// state, not what a future lid close would do. `ClamshellPredictionTests` pins this.
     static var lidCloseWouldSleep: Bool { !SleepDisabledFlag.read() }
 
@@ -60,7 +60,7 @@ enum PowerEnvironment {
     }
 }
 
-/// Fires a callback whenever the power source changes — charger plugged or unplugged,
+/// Fires a callback whenever the power source changes, charger plugged or unplugged,
 /// battery level moved. Cheaper and more responsive than polling.
 final class PowerSourceObserver {
     private var source: CFRunLoopSource?

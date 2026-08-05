@@ -126,7 +126,7 @@ final class WatchdogBehaviourTests: XCTestCase {
 
         XCTAssertFalse(
             caffeinate.isRunning,
-            "caffeinate -w should exit once the watched pid dies — this is what stops a "
+            "caffeinate -w should exit once the watched pid dies. That is what stops a "
                 + "crashed app leaving an orphan holding the system awake"
         )
 

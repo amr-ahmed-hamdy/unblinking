@@ -7,7 +7,7 @@ enum AppInfo {
     static let author = "Amr Ahmed Hamdy"
     static let copyright = "© 2026 Amr Ahmed Hamdy · MIT Licensed"
 
-    static let tagline = "A menu bar switch for keeping this Mac awake — including with "
+    static let tagline = "A menu bar switch for keeping this Mac awake, including with "
         + "the lid closed, which the caffeinate command can't do on its own."
 
     // MARK: - Links

@@ -121,13 +121,13 @@ codesign --verify --deep --strict --verbose=2 "$APP_PATH"
 
 # Hardened Runtime is on, and the app spawns caffeinate, sudo, pmset and osascript.
 # Spawning subprocesses is allowed under Hardened Runtime, but confirm the flag is
-# actually set — notarization rejects builds without it.
+# actually set, notarization rejects builds without it.
 if [[ "$ADHOC" != "1" ]] && ! codesign -d --verbose=2 "$APP_PATH" 2>&1 | grep -q "flags=.*runtime"; then
-    echo "Hardened Runtime is not enabled — notarization will reject this." >&2
+    echo "Hardened Runtime is not enabled, notarization will reject this." >&2
     exit 1
 fi
 
-# The disk image is built either way — an unnotarized DMG is still the easiest way to
+# The disk image is built either way, an unnotarized DMG is still the easiest way to
 # hand someone the app, they just have to approve it once in System Settings.
 if [[ "$SKIP_NOTARIZE" == "1" ]]; then
     echo "==> Skipping notarization"
@@ -164,6 +164,6 @@ if [[ "$SKIP_NOTARIZE" == "1" ]]; then
     echo "NOT notarized. Recipients must approve it once in"
     echo "System Settings > Privacy & Security > Open Anyway."
 else
-    echo "Both the zip and the DMG are notarized and stapled — anyone can double-click them"
+    echo "Both the zip and the DMG are notarized and stapled, anyone can double-click them"
     echo "with no Gatekeeper warning."
 fi

@@ -1,7 +1,7 @@
 import Foundation
 
 enum PrivilegeError: LocalizedError, Equatable {
-    /// No silent path to root yet — the one-time authorization hasn't been installed.
+    /// No silent path to root yet, the one-time authorization hasn't been installed.
     case notAuthorized
     case invalidUserName(String)
     case validationFailed(String)
@@ -46,7 +46,7 @@ struct SudoersRunner: PrivilegedRunner {
     ///
     /// sudo skips such names inside an @includedir directory, to avoid picking up package
     /// manager and editor temp files. A reverse-DNS name like "com.amrhamdy.unblinking"
-    /// installs perfectly and is then silently ignored — the file is there, correctly
+    /// installs perfectly and is then silently ignored, the file is there, correctly
     /// owned, and does nothing. `ruleFileNameIsLoadable` pins this down.
     static let ruleFileName = "unblinking"
     static let ruleFilePath = "/etc/sudoers.d/\(ruleFileName)"
@@ -76,7 +76,7 @@ struct SudoersRunner: PrivilegedRunner {
         # Installed by Unblinking.app.
         #
         # Lets \(user) toggle lid-close sleep without a password prompt every time.
-        # Scoped to these two exact commands — no wildcards, no other pmset subcommands.
+        # Scoped to these two exact commands, no wildcards, no other pmset subcommands.
         #
         # Remove with:  sudo rm \(ruleFilePath)
         # (or use "Remove Permission" in Unblinking's Closed-Lid settings)
@@ -111,20 +111,20 @@ struct SudoersRunner: PrivilegedRunner {
     /// It previously staged the rule in the user's temp directory, validated it there with
     /// `visudo -c`, and only then asked root to `install` that path. Mode 0700 on that
     /// directory keeps *other users* out but not other processes running as *the same
-    /// user* — and the gap between validation and root reading the file spans the entire
+    /// user*, and the gap between validation and root reading the file spans the entire
     /// password dialog. Since `visudo -c` checks syntax only and follows symlinks, and
     /// `install` dereferences them, same-uid malware could substitute
     /// `<user> ALL=(ALL) NOPASSWD: ALL` while the user typed their password and root would
     /// install it. No precise race was needed: an attacker can simply rewrite in a loop.
     /// That is a root escalation, and on macOS the password prompt is exactly the boundary
-    /// it crossed — being in the `admin` group is not the same as being root.
+    /// it crossed, being in the `admin` group is not the same as being root.
     ///
     /// Now the same bytes `visudo` validates are the bytes `install` copies, and nothing
     /// unprivileged can touch them at any point.
     static func installScript(user: String) -> String {
         // A random delimiter, and quoted, so the heredoc cannot be terminated early or
         // expanded. The rule text is derived from a whitelist-validated username, so it
-        // cannot contain a delimiter anyway — this is belt and braces.
+        // cannot contain a delimiter anyway, this is belt and braces.
         let delimiter = "UNBLINKING_RULE_"
             + UUID().uuidString.replacingOccurrences(of: "-", with: "")
         let removals = legacyRuleFilePaths.map { "'\($0)'" }.joined(separator: " ")
@@ -143,7 +143,7 @@ struct SudoersRunner: PrivilegedRunner {
             "/usr/sbin/visudo -cf \"$d/rule\" && "
                 + "/usr/bin/install -m 0440 -o root -g wheel \"$d/rule\" "
                 + "'\(ruleFilePath)' && "
-                // 0440 root:wheel — sudo silently ignores drop-ins with looser
+                // 0440 root:wheel, sudo silently ignores drop-ins with looser
                 // permissions. The same elevated call clears any file left behind under a
                 // previous name, so the user isn't asked for a password twice.
                 + "/bin/rm -f \(removals)",
@@ -159,7 +159,7 @@ struct SudoersRunner: PrivilegedRunner {
         // Require the grant to live under the *current* file name, not just to work. A
         // rule left over from an earlier name still grants the same commands, so without
         // this check a renamed app would keep running on the old file forever and never
-        // migrate — leaving a stale grant in /etc named after an app that no longer
+        // migrate, leaving a stale grant in /etc named after an app that no longer
         // exists. Failing here costs one prompt and cleans that up for good.
         guard FileManager.default.fileExists(atPath: Self.ruleFilePath) else { return false }
 
@@ -210,7 +210,7 @@ struct SudoersRunner: PrivilegedRunner {
                 "The rule was written to \(Self.ruleFilePath) but sudo still won't run "
                     + "pmset without a password.\n\nCheck that @includedir "
                     + "/private/etc/sudoers.d appears after the %admin line in "
-                    + "/etc/sudoers — sudoers uses the last matching rule."
+                    + "/etc/sudoers, sudoers uses the last matching rule."
             )
         }
     }
@@ -228,7 +228,7 @@ struct SudoersRunner: PrivilegedRunner {
     private enum ScriptOutcome {
         case success
         case cancelled
-        /// Couldn't run at all — nothing was shown to the user, so it is safe to retry
+        /// Couldn't run at all, nothing was shown to the user, so it is safe to retry
         /// another way without risking a second password dialog.
         case unavailable(String)
     }

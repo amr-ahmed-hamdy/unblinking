@@ -102,7 +102,7 @@ final class StrayProcessParsingTests: XCTestCase {
 
 final class SudoersRuleTests: XCTestCase {
     /// sudo skips files in an @includedir whose names contain "." or end in "~". A rule
-    /// under such a name installs cleanly, looks correct in `ls -l`, and is never read —
+    /// under such a name installs cleanly, looks correct in `ls -l`, and is never read,
     /// which is exactly the failure this app shipped with first time around.
     func testRuleFileNameIsOneSudoWillActuallyRead() {
         XCTAssertTrue(
@@ -236,7 +236,7 @@ final class SudoersRuleTests: XCTestCase {
         )
     }
 
-    /// The script is multi-line, and AppleScript string literals cannot span lines — so
+    /// The script is multi-line, and AppleScript string literals cannot span lines, so
     /// the escaping has to survive a round trip or the install silently breaks.
     func testMultiLineScriptSurvivesAppleScriptEscaping() {
         let escaped = SudoersRunner.escapeForAppleScript(
@@ -303,7 +303,7 @@ final class IconStyleTests: XCTestCase {
     }
 
     /// Reduce Motion is an accessibility setting, so it overrides the chosen style rather
-    /// than being merged with it — but only by removing motion, never colour.
+    /// than being merged with it, but only by removing motion, never colour.
     func testReduceMotionDemotesVividToColour() {
         XCTAssertEqual(IconStyle.effective(preferred: .vivid, reduceMotion: true), .colour)
         XCTAssertFalse(
@@ -340,7 +340,7 @@ final class IconStyleTests: XCTestCase {
 /// Regression guard: `advanceFrame()` used to paint an active icon unconditionally, on the
 /// assumption that a running animation timer implied a running session. A frame tick queued
 /// just before the user turned off would land afterwards and repaint the lit eye over the
-/// off one — leaving the icon stuck lit with nothing actually running.
+/// off one, leaving the icon stuck lit with nothing actually running.
 final class IconStateTests: XCTestCase {
     func testOffWhenInactive() {
         XCTAssertEqual(

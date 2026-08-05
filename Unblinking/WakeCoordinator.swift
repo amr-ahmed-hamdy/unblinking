@@ -4,8 +4,8 @@ import UserNotifications
 /// Single source of truth for "is the Mac being kept awake, and how".
 ///
 /// Two independent layers sit underneath:
-///   1. `CaffeineProcess`   — blocks idle/display/disk sleep. No privileges.
-///   2. `ClamshellController` — blocks lid-close sleep. Needs root, system-wide, sticky.
+///   1. `CaffeineProcess`  , blocks idle/display/disk sleep. No privileges.
+///   2. `ClamshellController`, blocks lid-close sleep. Needs root, system-wide, sticky.
 ///
 /// Layer 2 is the dangerous one: `SleepDisabled` outlives the app and even a reboot, so
 /// teardown is handled on every exit path plus a recovery check at next launch.
@@ -71,8 +71,8 @@ final class WakeCoordinator: ObservableObject {
         }
 
         // Reset the published state too. Leaving isActive set would mean a glowing eye
-        // with no caffeinate behind it — exactly the phantom state this app exists to
-        // prevent — for anything that keeps running after this call.
+        // with no caffeinate behind it, exactly the phantom state this app exists to
+        // prevent, for anything that keeps running after this call.
         isActive = false
         startedAt = nil
         endsAt = nil
@@ -89,7 +89,7 @@ final class WakeCoordinator: ObservableObject {
         }
 
         if preferences.weOwnSleepDisabled {
-            // We set it and never got to clean up — force quit, crash, or power loss.
+            // We set it and never got to clean up, force quit, crash, or power loss.
             // Restore normal sleep without bothering the user.
             try? clamshell.setEnabled(false)
             preferences.weOwnSleepDisabled = false
@@ -103,7 +103,7 @@ final class WakeCoordinator: ObservableObject {
         alert.messageText = "This Mac is set to never sleep"
         alert.informativeText = """
             The system-wide "disable sleep" setting is currently on, but Unblinking didn't \
-            turn it on. Something else did — another app, or a manual \
+            turn it on. Something else did, another app, or a manual \
             `sudo pmset -a disablesleep 1`.
 
             While it's on, this Mac won't sleep even when you close the lid.
@@ -173,7 +173,7 @@ final class WakeCoordinator: ObservableObject {
     }
 
     /// Changes how long the current session has left, and remembers the choice for next
-    /// time. Safe to call when nothing is running — it just stores the preference.
+    /// time. Safe to call when nothing is running, it just stores the preference.
     ///
     /// The caffeinate child bakes `-t` in at spawn, so the assertion layer genuinely has
     /// to be replaced. The clamshell layer does not: cycling `SleepDisabled` would restore
@@ -197,7 +197,7 @@ final class WakeCoordinator: ObservableObject {
             return
         }
 
-        // The session didn't restart, it was re-timed — so "elapsed" keeps counting from
+        // The session didn't restart, it was re-timed, so "elapsed" keeps counting from
         // the original start, while "remaining" measures from now.
         endsAt = duration.secondsValue.map { Date().addingTimeInterval(TimeInterval($0)) }
         scheduleExpiry()
@@ -260,7 +260,7 @@ final class WakeCoordinator: ObservableObject {
 
         do {
             // Breadcrumb first: if we're killed between here and the flag actually being
-            // set, the next launch clears a flag we don't own — harmless. The reverse
+            // set, the next launch clears a flag we don't own, harmless. The reverse
             // order could leave the flag set with nobody claiming it.
             preferences.weOwnSleepDisabled = true
             try clamshell.setEnabled(true)
@@ -284,7 +284,7 @@ final class WakeCoordinator: ObservableObject {
             preferences.weOwnSleepDisabled = false
             clamshellActive = false
         } catch PrivilegeError.notAuthorized {
-            // Can't clear it silently — tell the user rather than leaving them believing
+            // Can't clear it silently, tell the user rather than leaving them believing
             // sleep is back to normal when it isn't.
             requestAuthorization { [weak self] in
                 self?.disableClamshell()
@@ -359,7 +359,7 @@ final class WakeCoordinator: ObservableObject {
     /// Changing the policy has to re-evaluate straight away.
     ///
     /// Otherwise picking "Turn off when unplugged" while already running on battery does
-    /// nothing at all until the next time the charger is plugged in and pulled out — the
+    /// nothing at all until the next time the charger is plugged in and pulled out, the
     /// one moment the setting is least likely to be what the user wanted.
     func setBatteryPolicy(_ policy: BatteryPolicy) {
         preferences.batteryPolicy = policy

@@ -1,13 +1,13 @@
 import Foundation
 
-/// Owns the system-wide `SleepDisabled` flag — the only software switch that stops a
+/// Owns the system-wide `SleepDisabled` flag, the only software switch that stops a
 /// MacBook sleeping when the lid closes.
 ///
 /// Power assertions (what `caffeinate` creates) cannot do this. Closing the lid triggers
 /// *clamshell sleep*, a lower-level suspend that assertions never see.
 ///
 /// The flag is global and survives reboots, so every path that sets it must have a
-/// matching path that clears it — including the ones that only run at next launch.
+/// matching path that clears it, including the ones that only run at next launch.
 /// The system-wide `SleepDisabled` flag, read straight from `pmset`.
 ///
 /// Split out from `ClamshellController` so the privilege layer can read the current value
@@ -48,7 +48,7 @@ final class ClamshellController {
         try runner.setSleepDisabled(enabled)
     }
 
-    /// Blocking — shows the administrator password dialog. Call from a detached task.
+    /// Blocking, shows the administrator password dialog. Call from a detached task.
     nonisolated func installAuthorization() throws {
         try SudoersRunner().installAuthorization()
     }

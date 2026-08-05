@@ -9,7 +9,7 @@ struct StrayProcess: Identifiable, Hashable {
 
 /// Finds `caffeinate` processes running outside this app.
 ///
-/// These are reported, never killed automatically — plenty of tools spawn `caffeinate`
+/// These are reported, never killed automatically, plenty of tools spawn `caffeinate`
 /// legitimately (the `claude` CLI runs `caffeinate -i -t 300`, for one), and silently
 /// killing someone else's assertion would break their work.
 enum StrayProcessWatcher {
@@ -32,7 +32,7 @@ enum StrayProcessWatcher {
         let uid = String(getuid())
         let pgrep = Shell.run("/usr/bin/pgrep", ["-x", "-U", uid, "caffeinate"])
 
-        // pgrep exits 1 when nothing matched — an empty list, not an error.
+        // pgrep exits 1 when nothing matched, an empty list, not an error.
         let pids = pgrep.stdout
             .split(separator: "\n")
             .compactMap { pid_t($0.trimmingCharacters(in: .whitespaces)) }

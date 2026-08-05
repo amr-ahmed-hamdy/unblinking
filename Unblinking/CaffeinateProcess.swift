@@ -1,6 +1,6 @@
 import Foundation
 
-/// Owns the `/usr/bin/caffeinate` child process — the layer that blocks idle, display
+/// Owns the `/usr/bin/caffeinate` child process, the layer that blocks idle, display
 /// and disk sleep. It does **not** affect lid-close sleep; see `ClamshellController`.
 @MainActor
 final class CaffeineProcess {
@@ -39,7 +39,7 @@ final class CaffeineProcess {
 
     private var process: Process?
 
-    /// Called when caffeinate exits on its own — `-t` elapsed, or something killed it.
+    /// Called when caffeinate exits on its own, `-t` elapsed, or something killed it.
     var onUnexpectedExit: (() -> Void)?
 
     var isRunning: Bool { process?.isRunning ?? false }
@@ -96,7 +96,7 @@ final class CaffeineProcess {
     private func handleTermination(of finished: Process) {
         // Termination handlers are delivered asynchronously, so by the time one arrives
         // its run may already have been stopped, or replaced by a newer one. Only the
-        // process we're currently tracking is allowed to end a session — otherwise a
+        // process we're currently tracking is allowed to end a session, otherwise a
         // quick off/on could have the old child's handler wipe out the new child.
         guard finished === process else { return }
 

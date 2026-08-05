@@ -10,7 +10,7 @@ enum UnblinkingApp {
         let appDelegate = AppDelegate()
         delegate = appDelegate
         application.delegate = appDelegate
-        // Menu bar only — no Dock icon, no app switcher entry.
+        // Menu bar only, no Dock icon, no app switcher entry.
         application.setActivationPolicy(.accessory)
         application.run()
     }
@@ -54,7 +54,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// `applicationWillTerminate` covers Quit and logout, but not a `kill`. These signal
     /// sources catch SIGTERM/SIGINT so the system-wide sleep flag still gets cleared.
     ///
-    /// Nothing catches SIGKILL — that path is handled by the recovery check at next launch.
+    /// Nothing catches SIGKILL, that path is handled by the recovery check at next launch.
     private func installTerminationHandlers() {
         let workspaceCenter = NSWorkspace.shared.notificationCenter
         workspaceCenter.addObserver(

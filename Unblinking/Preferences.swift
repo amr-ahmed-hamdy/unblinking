@@ -19,7 +19,7 @@ enum BatteryPolicy: String, CaseIterable, Identifiable {
         switch self {
         case .never:
             return "Closed-lid mode stays on until you turn it off. On battery this can run "
-                 + "the Mac down completely — in a closed bag it will also get hot."
+                 + "the Mac down completely, in a closed bag it will also get hot."
         case .offWhenUnplugged:
             return "Closed-lid mode only holds while the charger is connected. Unplugging "
                  + "restores normal sleep immediately."
@@ -40,8 +40,8 @@ enum TimeDisplay: String, CaseIterable, Identifiable {
 
 /// How loud the menu bar icon should be.
 ///
-/// A ladder rather than a set of unrelated looks: each step adds exactly one signal —
-/// shape, then colour, then motion — so the choice is obvious without reading the
+/// A ladder rather than a set of unrelated looks: each step adds exactly one signal,
+/// shape, then colour, then motion, so the choice is obvious without reading the
 /// descriptions.
 enum IconStyle: String, CaseIterable, Identifiable {
     /// Monochrome shape only. Blends in like any other menu bar icon.
@@ -70,7 +70,7 @@ enum IconStyle: String, CaseIterable, Identifiable {
             return "Orange when awake, red when closed-lid mode is on. Obvious at a "
                  + "glance, with nothing moving."
         case .vivid:
-            return "Colour plus a glow that breathes — faster and red when closed-lid mode "
+            return "Colour plus a glow that breathes, faster and red when closed-lid mode "
                  + "is on. The hardest to walk past, which is rather the point."
         }
     }
@@ -78,7 +78,7 @@ enum IconStyle: String, CaseIterable, Identifiable {
     /// Only Vivid animates; the others are a single static frame.
     var isAnimated: Bool { self == .vivid }
 
-    /// Reduce Motion is an accessibility setting, not a preference — it overrides the
+    /// Reduce Motion is an accessibility setting, not a preference, it overrides the
     /// chosen style rather than being merged with it.
     static func effective(preferred: IconStyle, reduceMotion: Bool) -> IconStyle {
         (reduceMotion && preferred == .vivid) ? .colour : preferred
@@ -190,7 +190,7 @@ final class Preferences: ObservableObject {
         didSet { defaults.set(restoreStateAtLaunch, forKey: Key.restoreStateAtLaunch) }
     }
 
-    /// Whether the last run ended with the app switched on — only consulted when
+    /// Whether the last run ended with the app switched on, only consulted when
     /// `restoreStateAtLaunch` is set.
     var lastStateWasOn: Bool {
         didSet { defaults.set(lastStateWasOn, forKey: Key.lastStateWasOn) }

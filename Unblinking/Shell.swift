@@ -2,7 +2,7 @@ import Foundation
 
 /// Runs short-lived command line tools and captures their output.
 ///
-/// Every call site passes an absolute path — never a bare name resolved through `PATH` —
+/// Every call site passes an absolute path, never a bare name resolved through `PATH`,
 /// because this app shells out to tools that matter (`pmset`, `sudo`, `visudo`) and a
 /// hijacked `PATH` must not be able to redirect them.
 enum Shell {
@@ -68,7 +68,7 @@ enum Shell {
         )
     }
 
-    /// Off-main-thread variant, for anything that can block for a long time —
+    /// Off-main-thread variant, for anything that can block for a long time,
     /// most importantly the administrator password prompt.
     static func runAsync(_ launchPath: String, _ arguments: [String] = []) async -> Result {
         await withCheckedContinuation { continuation in

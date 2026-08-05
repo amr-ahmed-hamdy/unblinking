@@ -118,7 +118,7 @@ final class ScenarioTests: XCTestCase {
     }
 
     /// If something kills caffeinate behind the app's back, the menu bar must not keep
-    /// claiming the Mac is awake — that is the exact confusion this app exists to end.
+    /// claiming the Mac is awake, that is the exact confusion this app exists to end.
     func testExternallyKilledChildFlipsTheAppBackToOff() async throws {
         coordinator.turnOn(duration: .indefinite)
         let pid = try XCTUnwrap(coordinator.caffeinateChildPID)
@@ -248,7 +248,7 @@ final class ScenarioTests: XCTestCase {
     // MARK: - Changing duration mid-session
 
     /// Re-timing a live session must move its end, not silently store a preference for
-    /// next time — which is what the Settings duration picker used to do.
+    /// next time, which is what the Settings duration picker used to do.
     func testSettingDurationRetimesTheRunningSession() throws {
         coordinator.turnOn(duration: .indefinite)
         XCTAssertNil(coordinator.endsAt, "an indefinite session has no end")
@@ -262,7 +262,7 @@ final class ScenarioTests: XCTestCase {
         XCTAssertTrue(coordinator.isActive)
         XCTAssertEqual(
             coordinator.startedAt, started,
-            "re-timing is not a restart — elapsed must keep counting from the original start"
+            "re-timing is not a restart, elapsed must keep counting from the original start"
         )
     }
 
@@ -275,8 +275,8 @@ final class ScenarioTests: XCTestCase {
         XCTAssertTrue(coordinator.isActive)
     }
 
-    /// The caffeinate child bakes `-t` in at spawn, so re-timing has to replace it —
-    /// otherwise the old timeout would still fire at the old moment.
+    /// The caffeinate child bakes `-t` in at spawn, so re-timing has to replace it.
+    /// Otherwise the old timeout would still fire at the old moment.
     func testRetimingReplacesTheCaffeinateChild() throws {
         coordinator.turnOn(duration: .seconds(900))
         let first = try XCTUnwrap(coordinator.caffeinateChildPID)
@@ -307,7 +307,7 @@ final class ScenarioTests: XCTestCase {
         coordinator.turnOn(duration: .indefinite)
         XCTAssertTrue(coordinator.isActive)
 
-        // Without closed-lid mode held, the policy is a no-op by design — the assertion
+        // Without closed-lid mode held, the policy is a no-op by design, the assertion
         // layer alone can't flatten a machine the way disabled sleep can.
         coordinator.setBatteryPolicy(.offWhenUnplugged)
         XCTAssertTrue(
@@ -486,7 +486,7 @@ final class PrivilegedScenarioTests: XCTestCase {
 /// `AppleClamshellCausesSleep` reads like the perfect answer to "will closing the lid
 /// sleep this Mac?", and the Closed Lid settings tab originally displayed it as exactly
 /// that. Measured on macOS 26 it does not vary with `SleepDisabled` at all while the lid
-/// is open — it describes the current clamshell state, not a future one. If this test ever
+/// is open, it describes the current clamshell state, not a future one. If this test ever
 /// fails, the property gained real predictive behaviour and the UI could use it directly.
 final class ClamshellPredictionTests: XCTestCase {
     func testRawClamshellPropertyIsNotAForecast() throws {
@@ -526,7 +526,7 @@ final class ClamshellPredictionTests: XCTestCase {
 
         XCTAssertEqual(
             withSleepEnabled, withSleepDisabled,
-            "AppleClamshellCausesSleep changed with SleepDisabled — it may now be usable "
+            "AppleClamshellCausesSleep changed with SleepDisabled, it may now be usable "
                 + "as a forecast, so PowerEnvironment.lidCloseWouldSleep could read it"
         )
     }

@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # Builds Unblinking and installs it into /Applications for use on this Mac.
-# Ad-hoc signed — fine locally, but see release.sh for something you can send to others.
+# Ad-hoc signed, fine locally, but see release.sh for something you can send to others.
 
 set -euo pipefail
 

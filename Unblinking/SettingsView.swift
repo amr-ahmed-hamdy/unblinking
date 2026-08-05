@@ -23,7 +23,7 @@ struct SettingsView: View {
     }
 
     /// All tabs share one height, so this is sized to the tallest (Closed Lid) with a
-    /// little slack — tall enough that its buttons are not cut off, short enough that the
+    /// little slack, tall enough that its buttons are not cut off, short enough that the
     /// lighter tabs don't sit in a sea of empty space.
     static let windowSize = CGSize(width: 500, height: 505)
 }
@@ -158,7 +158,7 @@ private struct SleepTab: View {
 
             Divider().padding(.vertical, 6)
 
-            Text("None of these affect what happens when you close the lid — that needs "
+            Text("None of these affect what happens when you close the lid, that needs "
                  + "Closed Lid mode.")
                 .font(.callout)
                 .foregroundColor(.secondary)
@@ -241,7 +241,7 @@ private struct ClosedLidTab: View {
 
                 HStack {
                     Text(coordinator.isClosedLidAuthorized
-                         ? "Granted — Unblinking can toggle lid-close sleep without asking."
+                         ? "Granted, Unblinking can toggle lid-close sleep without asking."
                          : "Not granted yet. You'll be asked once when you first turn this on.")
                         .font(.callout)
                         .foregroundColor(.secondary)
