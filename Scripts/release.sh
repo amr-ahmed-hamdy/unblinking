@@ -1,0 +1,127 @@
+#!/bin/bash
+#
+# Builds, signs, notarizes and packages Unblinking for distribution to other people.
+#
+# One-time setup:
+#
+#   1. Find your signing identity and Team ID:
+#        security find-identity -v -p codesigning
+#
+#   2. Store an App Store Connect API key or app-specific password in the keychain:
+#        xcrun notarytool store-credentials "unblinking-notary" \
+#            --apple-id "you@example.com" \
+#            --team-id "YOURTEAMID" \
+#            --password "abcd-efgh-ijkl-mnop"     # app-specific password
+#
+# Then:
+#
+#   DEVELOPMENT_TEAM=YOURTEAMID ./Scripts/release.sh
+#
+# Optional overrides:
+#   NOTARY_PROFILE   keychain profile name          (default: unblinking-notary)
+#   SIGNING_IDENTITY codesign identity              (default: Developer ID Application)
+#   SKIP_NOTARIZE=1  build and sign only
+
+set -euo pipefail
+
+PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+BUILD_DIR="$PROJECT_DIR/build"
+ARCHIVE_PATH="$BUILD_DIR/Unblinking.xcarchive"
+EXPORT_PATH="$BUILD_DIR/export"
+APP_PATH="$EXPORT_PATH/Unblinking.app"
+ZIP_PATH="$BUILD_DIR/Unblinking.zip"
+DMG_PATH="$BUILD_DIR/Unblinking.dmg"
+
+NOTARY_PROFILE="${NOTARY_PROFILE:-unblinking-notary}"
+SIGNING_IDENTITY="${SIGNING_IDENTITY:-Developer ID Application}"
+SKIP_NOTARIZE="${SKIP_NOTARIZE:-0}"
+
+if [[ -z "${DEVELOPMENT_TEAM:-}" ]]; then
+    echo "DEVELOPMENT_TEAM is not set." >&2
+    echo "Find your Team ID with: security find-identity -v -p codesigning" >&2
+    exit 1
+fi
+
+cd "$PROJECT_DIR"
+rm -rf "$BUILD_DIR"
+mkdir -p "$BUILD_DIR"
+
+echo "==> Archiving"
+xcodebuild archive \
+    -project Unblinking.xcodeproj \
+    -scheme Unblinking \
+    -configuration Release \
+    -archivePath "$ARCHIVE_PATH" \
+    CODE_SIGN_STYLE=Manual \
+    CODE_SIGN_IDENTITY="$SIGNING_IDENTITY" \
+    DEVELOPMENT_TEAM="$DEVELOPMENT_TEAM"
+
+cat > "$BUILD_DIR/ExportOptions.plist" <<PLIST
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>method</key>
+    <string>developer-id</string>
+    <key>teamID</key>
+    <string>$DEVELOPMENT_TEAM</string>
+    <key>signingStyle</key>
+    <string>manual</string>
+    <key>destination</key>
+    <string>export</string>
+</dict>
+</plist>
+PLIST
+
+echo "==> Exporting"
+xcodebuild -exportArchive \
+    -archivePath "$ARCHIVE_PATH" \
+    -exportOptionsPlist "$BUILD_DIR/ExportOptions.plist" \
+    -exportPath "$EXPORT_PATH"
+
+echo "==> Verifying the signature"
+codesign --verify --deep --strict --verbose=2 "$APP_PATH"
+
+# Hardened Runtime is on, and the app spawns caffeinate, sudo, pmset and osascript.
+# Spawning subprocesses is allowed under Hardened Runtime, but confirm the flag is
+# actually set — notarization rejects builds without it.
+if ! codesign -d --verbose=2 "$APP_PATH" 2>&1 | grep -q "flags=.*runtime"; then
+    echo "Hardened Runtime is not enabled — notarization will reject this." >&2
+    exit 1
+fi
+
+if [[ "$SKIP_NOTARIZE" == "1" ]]; then
+    echo "==> Skipping notarization (SKIP_NOTARIZE=1)"
+    echo "Signed app: $APP_PATH"
+    exit 0
+fi
+
+echo "==> Submitting for notarization (this usually takes a few minutes)"
+ditto -c -k --keepParent "$APP_PATH" "$ZIP_PATH"
+xcrun notarytool submit "$ZIP_PATH" --keychain-profile "$NOTARY_PROFILE" --wait
+
+echo "==> Stapling the ticket"
+xcrun stapler staple "$APP_PATH"
+xcrun stapler validate "$APP_PATH"
+
+echo "==> Building the disk image"
+rm -f "$DMG_PATH"
+DMG_STAGE="$BUILD_DIR/dmg"
+rm -rf "$DMG_STAGE"
+mkdir -p "$DMG_STAGE"
+cp -R "$APP_PATH" "$DMG_STAGE/"
+ln -s /Applications "$DMG_STAGE/Applications"
+hdiutil create -volname "Unblinking" -srcfolder "$DMG_STAGE" -ov -format UDZO "$DMG_PATH"
+
+# Re-zip the stapled app so the archive contains the ticket too.
+rm -f "$ZIP_PATH"
+ditto -c -k --keepParent "$APP_PATH" "$ZIP_PATH"
+
+echo
+echo "Done."
+echo "  App: $APP_PATH"
+echo "  Zip: $ZIP_PATH"
+echo "  DMG: $DMG_PATH"
+echo
+echo "Both the zip and the DMG are notarized and stapled — anyone can double-click them"
+echo "with no Gatekeeper warning."
