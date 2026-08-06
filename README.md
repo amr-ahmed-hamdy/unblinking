@@ -9,10 +9,11 @@
 The `caffeinate` command can't do that. This app can.
 
 [![macOS](https://img.shields.io/badge/macOS-13%2B-000000?logo=apple&logoColor=white)](https://www.apple.com/macos/)
-[![Swift](https://img.shields.io/badge/Swift-5.9-F05138?logo=swift&logoColor=white)](https://swift.org)
+[![Swift](https://img.shields.io/badge/Swift-5-F05138?logo=swift&logoColor=white)](https://swift.org)
 [![Apple Silicon](https://img.shields.io/badge/Apple%20Silicon-native-000000?logo=apple&logoColor=white)](https://support.apple.com/en-us/HT211814)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-71%20passing-brightgreen)](#testing)
+[![Release](https://img.shields.io/github/v/release/amr-ahmed-hamdy/unblinking?color=F05138)](https://github.com/amr-ahmed-hamdy/unblinking/releases/latest)
+[![Tests](https://img.shields.io/badge/tests-91%20passing-brightgreen)](#testing)
 
 <img src="assets/menu.png" width="480" alt="Unblinking menu bar app showing its menu">
 
